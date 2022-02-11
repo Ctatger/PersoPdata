@@ -46,15 +46,4 @@ def Tunnel_Parser_full(raw=False):
 
 
 if __name__=="__main__":
-
-    l = [1,2,3,4,5,6,7]
-
-
-    for x, y in pairwise(l):
-        print("iter")
-        print(x)
-        print(y)
-
-    print(len(Tunnel_Parser()))
-    print(Tunnel_Parser_full())
     print(len(Tunnel_Parser_full()))
