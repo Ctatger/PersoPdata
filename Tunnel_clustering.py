@@ -12,7 +12,6 @@ from math import trunc
 import random
 
 
-
 def Graph_Clusters(X,unique_labels,colors,labels,n_clusters_):
     """Graph_Clusters [Traces graph of tunnel clusters, changing color for each]
 
@@ -51,26 +50,29 @@ def Cluster_Rectangles(X,unique_labels,labels,switch=False):
     """Cluster_Rectangles [Goes through clusters and creates a rectangle surronding it]
 
     Arguments:
-        X {[array]} -- Starting and ending point of each tunnel [Xa Ya Xb Yb]
-        unique_labels {[array]} -- [Unique Id of each tunnel cluster]
-        labels {[array]} -- [Cluster ID for each tunnel, in order]
+        X {array} -- Starting and ending point of each tunnel [Xa Ya Xb Yb]
+        unique_labels {array} -- [Unique Id of each tunnel cluster
+        labels {array} -- Cluster ID for each tunnel, in order
 
     Keyword Arguments:
-        switch {[bool]} -- [Coordinates are switched when displaying rectangles on ipyleaflet map] (default: {False})
+        switch {bool} -- Coordinates are switched when displaying rectangles on ipyleaflet map (default: {False})
 
     Returns:
-        [array] -- [Bottom_left and Top_right point of each cluster's rectangle [Xa Ya]]
+        array -- Bottom_left and Top_right point of each cluster's rectangle [Xa Ya]
     """
+    #Indexes to extract abs and ord coord separatlyn due to plt format
     abs_index=[0,2]
     ord_index=[1,3]
     cluster_rectangles=[]
-    
+
+    #Iterates through each cluster
     for k in unique_labels:
         abs_list=[]
         ord_list=[]
         bottom_left=[]
         top_right=[]
 
+        #skips noise points (to be deleted with new clustering method)
         if k != -1:
             Cluster_points=[]
             ind = [index for index, element in enumerate(labels) if element == k]
@@ -78,6 +80,7 @@ def Cluster_Rectangles(X,unique_labels,labels,switch=False):
             for j in ind:
                 Cluster_points.append(X[j])
 
+        #Creates a list of cluster points, changing from [xa ya xb yb] to [xa ya],[xb yb]
         for points in Cluster_points:
             abs_list.append(points[0])
             abs_list.append(points[2])
