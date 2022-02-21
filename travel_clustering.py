@@ -1,9 +1,14 @@
 #%%
+
+import matplotlib.pyplot as plt
 import pandas as pd
 from ast import literal_eval
 from ipyleaflet import Map, Polyline, basemaps, CircleMarker, DivIcon, Marker, DrawControl, Rectangle
 import numpy as np
+from sklearn import cluster
 from sklearn.cluster import DBSCAN
+import random
+from markov import MK_chain
 
 def color_str(r,g,b):
     return '#'+'0x{:02x}'.format(min(r,255))[2:]+'0x{:02x}'.format(min(g,255))[2:]+'0x{:02x}'.format(min(b,255))[2:]
@@ -76,7 +81,8 @@ def create_clusters(df, columns, clustering_method, header_name=None):
     if not header_name:
         header_name="_".join(columns)
     df[header_name] = clustering_method.fit_predict(np.array([l for l in df_travel[columns].values]))
-    df["gps_cluster_label"] = pd.NaT
+    df["gps_start_cluster_label"] = pd.NaT
+    df["gps_end_cluster_label"] = pd.NaT
 
     return df
 
@@ -85,22 +91,42 @@ def get_color(l, i, default):
         return default
     return l[i]
 
-def Cluster_Rectangles(data_frame):
+def color_list(data_frame,group='gps_start_cluster',seed=42,colors_arr=[]):
+
+    n = int(np.ceil(np.power(data_frame[group].nunique(), 1/3)))
+    colors = colors_arr
+    for r in range(n):
+        for g in range(n):
+            for b in range(n):
+                colors.append(color_str(int(r*255/(n-1)), int(g*255/(n-1)), int(b*255/(n-1))))
+    np.random.seed(seed)#hhgg
+    np.random.shuffle(colors)
+
+    if '#ffffff' in colors:
+        colors.remove("#ffffff")
+
+    return colors
+
+def Cluster_Rectangles(data_frame,group='gps_start_cluster'):
 
     cluster_rectangles=[]
 
-    for Cluster_id in np.unique(data_frame['gps_cluster']):
+    for Cluster_id in np.unique(data_frame[group]):
         if Cluster_id !=-1:
             abs_list=[]
             ord_list=[]
             bottom_left=[]
             top_right=[]
-            points = data_frame.loc[data_frame['gps_cluster'] == Cluster_id]
+            points = data_frame.loc[data_frame[group] == Cluster_id]
             
             for _, row in points.iterrows():
-                abs_list.append(row['start_gps_coord'][0])
-                ord_list.append(row['start_gps_coord'][1])
-            
+                if group == 'gps_start_cluster':
+                    abs_list.append(row['start_gps_coord'][0])
+                    ord_list.append(row['start_gps_coord'][1])
+                else:
+                    abs_list.append(row['end_gps_coord'][0])
+                    ord_list.append(row['end_gps_coord'][1])
+
             bottom_left.append(min(abs_list))
             bottom_left.append(min(ord_list))
             top_right.append(max(abs_list))
@@ -108,42 +134,65 @@ def Cluster_Rectangles(data_frame):
             cluster_rectangles.append((tuple(bottom_left),tuple(top_right)))
     return cluster_rectangles
 
-def Cluster_Labels(data_frame):
-    for Cluster_id in np.unique(data_frame['gps_cluster']):
+def Cluster_Labels(data_frame,group='gps_start_cluster'):
+    for Cluster_id in np.unique(data_frame[group]):
         if Cluster_id !=-1:
+            points = data_frame.loc[data_frame[group] == Cluster_id]
+            if group == 'gps_start_cluster':
+                data_frame.loc[data_frame[group] == Cluster_id, 'gps_start_cluster_label'] = points['start_gps_label'].mode()[0]
+            else:
+                data_frame.loc[data_frame[group] == Cluster_id, 'gps_end_cluster_label'] = points['end_gps_label'].mode()[0]
 
-            points = data_frame.loc[data_frame['gps_cluster'] == Cluster_id]
-            print(points['start_gps_label'].mode()[0])
-            data_frame.loc[data_frame["gps_cluster"] == Cluster_id, "gps_cluster_label"] = points['start_gps_label'].mode()[0]
+def Create_ProbabilityMatrix(data_frame):
+    T_matrix=[]
+    State_prob=[]
+    prob={}
 
+    Start_clusters=data_frame['gps_start_cluster'].unique()
+    End_clusters=data_frame['gps_end_cluster'].unique()
+
+    for k in Start_clusters:
+        prob={str(x): 0 for x in Start_clusters}
+        Starting_points = data_frame.loc[data_frame['gps_start_cluster'] == k]
+
+        for l in End_clusters:
+            Ending_points= Starting_points.loc[Starting_points['gps_end_cluster'] == l]
+            State_prob.append([l,len(Ending_points)/len(Starting_points)])
+
+        for key in State_prob:
+            prob[str(key[0])] = key[1]
+        T_matrix.append(list(prob.values()))
+    return T_matrix
+    
+def Remove_redundant_travels(data_frame):
+    df=data_frame.drop(data_frame[data_frame.gps_start_cluster_label == data_frame.gps_end_cluster_label].index)
+    df=df.reset_index(drop=True)
+    return df
+
+def Df_Kfold(data_frame,n_fold):
+    Indexes=[]
+    k, m = divmod(len(data_frame), n_fold)
+    for i in range(n_fold):
+        Indexes.append([i*k+min(i, m),(i+1)*k+min(i+1, m)])
+    return Indexes
+
+def Evaluate_model():   
+    pass
 
 #%%
 
 if __name__ == "__main__":
 
-    WEEKDAY_MonTueWed=(0,3)
-    WEEKDAY_MonTueWedThu=(0,4)
-    WEEKDAY_MonTueWedThuFri=(0,5)
-    WEEKDAY_Weekend=(5,7)
-    WEEKDAY_Mon=(0,1)
-    WEEKDAY_Tue=(1,2)
-    WEEKDAY_Wed=(2,3)
-    WEEKDAY_Thu=(3,4)
-    WEEKDAY_Fri=(4,5)
-    WEEKDAY_Sat=(5,6)
-    WEEKDAY_Sun=(6,7)
+   
+    WEEKDAY=(0,5)
+    WEEKEND=(5,7)
 
-    HOUR_Morning=(6,12)
+    HOUR_EarlyMorning=(1,6)
+    HOUR_Morning=(6,9)
+    HOUR_Midday=(9,16)
+    HOUR_Evening=(16,19)
+    HOUR_LateEvening=(19,24)
     HOUR_Afternoon=(12,23)
-    HOUR_6_8=(6, 8)
-    HOUR_8_10=(8, 10)
-    HOUR_10_12=(10, 12)
-    HOUR_12_14=(12, 14)
-    HOUR_14_16=(14, 16)
-    HOUR_16_18=(16, 18)
-    HOUR_18_20=(18, 20)
-    HOUR_20_22=(20, 22)
-    HOUR_22_00=(22, 24)
     
 
     df_travel = pd.read_csv("csv/travel_based_dataframe.csv",index_col=0, converters={"start_gps_coord": literal_eval, "end_gps_coord": literal_eval, "travel_gps_list": literal_eval})
@@ -156,42 +205,44 @@ if __name__ == "__main__":
 
     trip_to_track = [28]
     m = prepare_map(df_travel, trip_to_track)
-    #m
 
+    #Classifie les trajets et ajoute une colonne avec l'ID cluster à la df
     dbscan = DBSCAN(eps=0.005, min_samples=3)
-    create_clusters(df_travel, 'start_gps_coord', dbscan, header_name='gps_cluster')#Classifie les trajets et ajoute une colonne avec l'ID cluster à la df
+    create_clusters(df_travel, 'start_gps_coord', dbscan, header_name='gps_start_cluster')
 
-    C_rec=Cluster_Rectangles(df_travel)
+    #Classifie les trajets et ajoute une colonne avec l'ID cluster à la df
+    dbscan = DBSCAN(eps=0.005, min_samples=3)
+    create_clusters(df_travel, 'end_gps_coord', dbscan, header_name='gps_end_cluster')
+
+    start_rec=Cluster_Rectangles(df_travel)
+    end_rec=Cluster_Rectangles(df_travel,group='gps_end_cluster')
     Cluster_Labels(df_travel)
+    Cluster_Labels(df_travel,group='gps_end_cluster')
 
     m = Map(basemap=basemaps.OpenStreetMap.France, zoom=9, scroll_wheel_zoom=True)   
-    m
     vals = [l for l in df_travel['start_gps_coord'].values]
     ctr = np.mean(vals, axis=0)
     m.center = list(ctr)
-    
-    #Colors
-    n = int(np.ceil(np.power(df_travel['gps_cluster'].nunique(), 1/3)))
-    colors = []
-    for r in range(n):
-        for g in range(n):
-            for b in range(n):
-                colors.append(color_str(int(r*255/(n-1)), int(g*255/(n-1)), int(b*255/(n-1))))
-    np.random.seed(42)#hhgg
-    np.random.shuffle(colors)
 
-    if '#ffffff' in colors:
-        colors.remove("#ffffff")
+    for i, coord in enumerate([l for l in df_travel['start_gps_coord'].values]):
+        m.add_layer(CircleMarker(location=list(coord), radius=3, color="#0000FF", fill_color='#FFFFFF',weight=2))
 
-    clist = [get_color(colors, i,'#ffffff') for i in df_travel['gps_cluster'].values] 
+    for j, coord in enumerate([l for l in df_travel['end_gps_coord'].values]):
+        m.add_layer(CircleMarker(location=list(coord), radius=3, color="#FF0000", fill_color='#FFFFFF',weight=2))
 
-    for i, coord in enumerate(vals):
-        m.add_layer(CircleMarker(location=list(coord), radius=3, color=clist[i], fill_color='#FFFFFF',weight=2))
-    m
+    for R_start in start_rec:
+        rectangle_start = Rectangle(bounds=R_start,weight=2)
+        m.add_layer(rectangle_start)
+    for R_end in end_rec:
+        rectangle_end = Rectangle(bounds=R_end,weight=2,color="#FF0000")
+        m.add_layer(rectangle_end)
 
-    for coord in C_rec:
-        rectangle = Rectangle(bounds=coord,weight=2)
-        m.add_layer(rectangle)
+    df_travel=Remove_redundant_travels(df_travel)
 
-    m
+    print(df_travel)
+    TMat=Create_ProbabilityMatrix(df_travel)
+
+    M_chain=MK_chain(TMat)
+    Kfold_index=Df_Kfold(df_travel,6)
+
 #%%

@@ -213,8 +213,8 @@ df_car = df_car.groupby(level=0).last().dropna(subset=[' gpsts'])
 df_car = remove_incoherent_gps_entry(df_car)
 
 # If you want to rewrite the travel csv file the run the two commented lines
-#df_travel = create_travel_based_df(df_car)
-#df_travel.to_csv("csv/csvtravel_based_dataframe.csv", encoding='utf-8')
+df_travel = create_travel_based_df(df_car)
+df_travel.to_csv("csv/travel_based_dataframe.csv", encoding='utf-8')
 
 df_travel = pd.read_csv("csv/travel_based_dataframe.csv",index_col=0, converters={"start_gps_coord": literal_eval, "end_gps_coord": literal_eval, "travel_gps_list": literal_eval})
 
