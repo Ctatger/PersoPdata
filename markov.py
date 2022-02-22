@@ -14,7 +14,7 @@ class MK_chain :
 
         for i in range(len(self.states)):
             if abs(1 - sum(self.transitionMatrix[i])) > self.TOLERANCE_VALUE:
-                raise ValueError(self.transitionMatrix[i])
+                raise ValueError("probabilities don't add up to 1 (please keep the 10e-3 threshold in mind)",self.transitionMatrix[i])
 
     def predict(self,curr_st,filter=False):
         if not filter:
@@ -29,7 +29,7 @@ class MK_chain :
 
     def update_transmat(self,st,prob_list):
         if abs(1-sum(prob_list)) > self.TOLERANCE_VALUE:
-            raise ValueError("New probabilities don't add up to 1 (please keep the 10-3 threshold in mind)")
+            raise ValueError("New probabilities don't add up to 1 (please keep the 10e-3 threshold in mind)")
 
         state_id=self.states.index(st)
         self.transitionMatrix[state_id]=prob_list
@@ -38,10 +38,10 @@ class MK_chain :
 
         for k in old_probs:
             if abs(1-sum(k)) > self.TOLERANCE_VALUE:
-                raise ValueError("New probabilities for existing states don't add up to 1 (please keep the 10-3 threshold in mind)")
+                raise ValueError("New probabilities for existing states don't add up to 1 (please keep the 10e-3 threshold in mind)")
 
         if abs(1-sum(new_probs)) > self.TOLERANCE_VALUE:
-            raise ValueError("Probabilities for new state don't add up to 1 (please keep the 10-3 threshold in mind)")
+            raise ValueError("Probabilities for new state don't add up to 1 (please keep the 10e-3 threshold in mind)")
 
         for i in range(len(self.states)):
             self.transitionMatrix[i]=old_probs[i]

@@ -1,5 +1,6 @@
 #%%
 
+from http.cookies import CookieError
 import matplotlib.pyplot as plt
 import pandas as pd
 from ast import literal_eval
@@ -143,7 +144,29 @@ def Cluster_Labels(data_frame,group='gps_start_cluster'):
             else:
                 data_frame.loc[data_frame[group] == Cluster_id, 'gps_end_cluster_label'] = points['end_gps_label'].mode()[0]
 
-def Create_ProbabilityMatrix(data_frame):
+def Compute_Proba(data_frame,n_startcluster,n_endcluster, coeff_matrix=None):
+    
+    if coeff_matrix is None:#TODO: Creer coeff de la bonne longueur directement startcluster*endcluster
+        coeff_matrix = np.ones((n_startcluster*n_endcluster,2))*0.00001
+        coeff_matrix = coeff_matrix.tolist()
+    
+    Start_clusters=data_frame['gps_start_cluster'].unique()
+    End_clusters=data_frame['gps_end_cluster'].unique()
+
+    for k in range(len(Start_clusters)):
+        Total=0
+        Starting_points = data_frame.loc[data_frame['gps_start_cluster'] == Start_clusters[k]]
+        for l in range(len(End_clusters)):
+            Ending_points= Starting_points.loc[Starting_points['gps_end_cluster'] == End_clusters[l]]
+            Total+=len(Ending_points)
+            
+            coeff_matrix[k*len(End_clusters)+l][0]+= len(Starting_points)
+            coeff_matrix[k*len(End_clusters)+l][1]+= len(Ending_points)
+        if Total != len(Starting_points):
+            raise ValueError("Probabilities not adding up to 1, check dataframe",Start_clusters[k])
+    return coeff_matrix
+
+def Create_ProbabilityMatrix(data_frame,coeff_mat=None):
     T_matrix=[]
     State_prob=[]
     prob={}
@@ -151,16 +174,16 @@ def Create_ProbabilityMatrix(data_frame):
     Start_clusters=data_frame['gps_start_cluster'].unique()
     End_clusters=data_frame['gps_end_cluster'].unique()
 
-    for k in Start_clusters:
+    for k in range(len(Start_clusters)):
         prob={str(x): 0 for x in Start_clusters}
-        Starting_points = data_frame.loc[data_frame['gps_start_cluster'] == k]
 
-        for l in End_clusters:
-            Ending_points= Starting_points.loc[Starting_points['gps_end_cluster'] == l]
-            State_prob.append([l,len(Ending_points)/len(Starting_points)])
-
+        for l in range(len(End_clusters)):
+            State_prob.append([End_clusters[l],coeff_mat[(k*len(End_clusters))+l][1]/coeff_mat[(k*len(End_clusters))+l][0]])
+            #print("Probs for end cluster ",End_clusters[l]," ",coeff_mat[k+l])
         for key in State_prob:
+            
             prob[str(key[0])] = key[1]
+
         T_matrix.append(list(prob.values()))
     return T_matrix
     
@@ -176,8 +199,29 @@ def Df_Kfold(data_frame,n_fold):
         Indexes.append([i*k+min(i, m),(i+1)*k+min(i+1, m)])
     return Indexes
 
-def Evaluate_model():   
-    pass
+def Evaluate_model(data_frame,M_chain,Kfold_index,n_startcluster,n_endcluster):   
+
+    
+
+    for i in range(len(Kfold_index)):
+        Predictions=[]
+        Answers=[]
+        Testset=data_frame[Kfold_index[i][0]:Kfold_index[i][1]]
+        Trainset=Kfold_index.copy()
+        del Trainset[i]
+
+        c_mat=Compute_Proba(data_frame[Trainset[0][0]:Trainset[0][1]],n_startcluster,n_endcluster)
+
+        for k in Trainset[1:]:
+            c_mat=Compute_Proba(data_frame[k[0]:k[1]],n_startcluster,n_endcluster,c_mat)
+
+        for _,row in Testset.iterrows():
+            Cur_state=str(row['gps_start_cluster'])
+            Answers.append(str(row['gps_end_cluster']))
+            Predictions.append(M_chain.predict(Cur_state,filter=False))
+            result=[(1) if Answers[m] == Predictions[m] else (0) for m in range(len(Predictions)) ]
+        print("Precision for split {} as test split is : {}%".format(i,sum(result)/len(result)))
+
 
 #%%
 
@@ -239,10 +283,14 @@ if __name__ == "__main__":
 
     df_travel=Remove_redundant_travels(df_travel)
 
-    print(df_travel)
-    TMat=Create_ProbabilityMatrix(df_travel)
+    st_cluster=len(df_travel.gps_start_cluster.unique())
+    end_cluster=len(df_travel.gps_end_cluster.unique())
+
+    Kfold_index=Df_Kfold(df_travel,6)
+    C_mat=Compute_Proba(df_travel,st_cluster,end_cluster)
+    TMat=Create_ProbabilityMatrix(df_travel,C_mat)
 
     M_chain=MK_chain(TMat)
-    Kfold_index=Df_Kfold(df_travel,6)
 
+    Evaluate_model(df_travel,M_chain,Kfold_index,st_cluster,end_cluster)
 #%%
