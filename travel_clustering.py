@@ -1,7 +1,8 @@
 #%%
 
-from http.cookies import CookieError
+import seaborn as sns
 import matplotlib.pyplot as plt
+import statistics
 import pandas as pd
 from ast import literal_eval
 from ipyleaflet import Map, Polyline, basemaps, CircleMarker, DivIcon, Marker, DrawControl, Rectangle
@@ -149,6 +150,8 @@ def Compute_Proba(data_frame,n_startcluster,n_endcluster, coeff_matrix=None):
     if coeff_matrix is None:#TODO: Creer coeff de la bonne longueur directement startcluster*endcluster
         coeff_matrix = np.ones((n_startcluster*n_endcluster,2))*0.00001
         coeff_matrix = coeff_matrix.tolist()
+        for h in coeff_matrix:
+            h.clear()
     
     Start_clusters=data_frame['gps_start_cluster'].unique()
     End_clusters=data_frame['gps_end_cluster'].unique()
@@ -160,8 +163,13 @@ def Compute_Proba(data_frame,n_startcluster,n_endcluster, coeff_matrix=None):
             Ending_points= Starting_points.loc[Starting_points['gps_end_cluster'] == End_clusters[l]]
             Total+=len(Ending_points)
             
-            coeff_matrix[k*len(End_clusters)+l][0]+= len(Starting_points)
-            coeff_matrix[k*len(End_clusters)+l][1]+= len(Ending_points)
+            if  not coeff_matrix[k*len(End_clusters)+l]:
+                coeff_matrix[k*len(End_clusters)+l].append(len(Starting_points))
+                coeff_matrix[k*len(End_clusters)+l].append(len(Ending_points))
+            else:
+                coeff_matrix[k*len(End_clusters)+l][0]+= len(Starting_points)
+                coeff_matrix[k*len(End_clusters)+l][1]+= len(Ending_points)
+
         if Total != len(Starting_points):
             raise ValueError("Probabilities not adding up to 1, check dataframe",Start_clusters[k])
     return coeff_matrix
@@ -200,12 +208,12 @@ def Df_Kfold(data_frame,n_fold):
     return Indexes
 
 def Evaluate_model(data_frame,M_chain,Kfold_index,n_startcluster,n_endcluster):   
-
-    
-
+    Score=[]
     for i in range(len(Kfold_index)):
+
         Predictions=[]
         Answers=[]
+ 
         Testset=data_frame[Kfold_index[i][0]:Kfold_index[i][1]]
         Trainset=Kfold_index.copy()
         del Trainset[i]
@@ -220,14 +228,16 @@ def Evaluate_model(data_frame,M_chain,Kfold_index,n_startcluster,n_endcluster):
             Answers.append(str(row['gps_end_cluster']))
             Predictions.append(M_chain.predict(Cur_state,filter=False))
             result=[(1) if Answers[m] == Predictions[m] else (0) for m in range(len(Predictions)) ]
+        Score.append((sum(result)/len(result)*100))
         print("Precision for split {} as test split is : {}%".format(i,sum(result)/len(result)))
-
+    return Score
 
 #%%
 
 if __name__ == "__main__":
 
-   
+    sns.set_theme()
+
     WEEKDAY=(0,5)
     WEEKEND=(5,7)
 
@@ -238,6 +248,7 @@ if __name__ == "__main__":
     HOUR_LateEvening=(19,24)
     HOUR_Afternoon=(12,23)
     
+    KFOLD=6
 
     df_travel = pd.read_csv("csv/travel_based_dataframe.csv",index_col=0, converters={"start_gps_coord": literal_eval, "end_gps_coord": literal_eval, "travel_gps_list": literal_eval})
 
@@ -258,12 +269,14 @@ if __name__ == "__main__":
     dbscan = DBSCAN(eps=0.005, min_samples=3)
     create_clusters(df_travel, 'end_gps_coord', dbscan, header_name='gps_end_cluster')
 
+    df_travel = df_travel[df_travel['gps_end_cluster'] != -1]
+
     start_rec=Cluster_Rectangles(df_travel)
     end_rec=Cluster_Rectangles(df_travel,group='gps_end_cluster')
     Cluster_Labels(df_travel)
     Cluster_Labels(df_travel,group='gps_end_cluster')
 
-    m = Map(basemap=basemaps.OpenStreetMap.France, zoom=9, scroll_wheel_zoom=True)   
+    """ m = Map(basemap=basemaps.OpenStreetMap.France, zoom=9, scroll_wheel_zoom=True)   
     vals = [l for l in df_travel['start_gps_coord'].values]
     ctr = np.mean(vals, axis=0)
     m.center = list(ctr)
@@ -279,18 +292,51 @@ if __name__ == "__main__":
         m.add_layer(rectangle_start)
     for R_end in end_rec:
         rectangle_end = Rectangle(bounds=R_end,weight=2,color="#FF0000")
-        m.add_layer(rectangle_end)
+        m.add_layer(rectangle_end) """
 
     df_travel=Remove_redundant_travels(df_travel)
 
     st_cluster=len(df_travel.gps_start_cluster.unique())
     end_cluster=len(df_travel.gps_end_cluster.unique())
 
-    Kfold_index=Df_Kfold(df_travel,6)
+    Kfold_index=Df_Kfold(df_travel,KFOLD)
     C_mat=Compute_Proba(df_travel,st_cluster,end_cluster)
     TMat=Create_ProbabilityMatrix(df_travel,C_mat)
 
     M_chain=MK_chain(TMat)
 
-    Evaluate_model(df_travel,M_chain,Kfold_index,st_cluster,end_cluster)
+    Scores=Evaluate_model(df_travel,M_chain,Kfold_index,st_cluster,end_cluster)
+
+    #graph of model's results
+    plt.scatter(list(range(KFOLD)),Scores)
+
+    plt.axhline(y=statistics.median(Scores), color='r', linestyle='-')
+    plt.title("Median Acurracy with for Kfold training: {:5.2f}%".format(statistics.median(Scores)))
+
+    plt.show()
+
+    #graph of arrival point repartition
+    aa=df_travel[df_travel['gps_start_cluster'] == 0]
+    a = pd.DataFrame({ 'group' : np.repeat('0',len(aa)), 'value': aa['gps_end_cluster'] })
+    bb=df_travel[df_travel['gps_start_cluster'] == 1]
+    b = pd.DataFrame({ 'group' : np.repeat('1',len(bb)), 'value': bb['gps_end_cluster'] })
+    cc=df_travel[df_travel['gps_start_cluster'] == 2]
+    c = pd.DataFrame({ 'group' : np.repeat('2',len(cc)), 'value': cc['gps_end_cluster'] })
+    dd=df_travel[df_travel['gps_start_cluster'] == 3]
+    d = pd.DataFrame({ 'group' : np.repeat('3',len(dd)), 'value': dd['gps_end_cluster'] })
+    ee=df_travel[df_travel['gps_start_cluster'] == 4]
+    e = pd.DataFrame({ 'group' : np.repeat('4',len(ee)), 'value': ee['gps_end_cluster'] })
+
+    df=a.append(b).append(c).append(d).append(e)
+
+    # plot violin chart
+    ax = sns.violinplot( x='group', y='value', data=df)
+    ax = sns.stripplot(x='group', y='value', data=df, color="orange", jitter=0.2, size=2.5)
+
+
+    # add title
+    plt.title("Boxplot with jitter")
+
+    # show the graph
+    plt.show()
 #%%
