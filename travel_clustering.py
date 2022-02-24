@@ -148,10 +148,8 @@ def Cluster_Labels(data_frame,group='gps_start_cluster'):
 def Compute_Proba(data_frame,n_startcluster,n_endcluster, coeff_matrix=None):
     
     if coeff_matrix is None:#TODO: Creer coeff de la bonne longueur directement startcluster*endcluster
-        coeff_matrix = np.ones((n_startcluster*n_endcluster,2))*0.00001
+        coeff_matrix = np.empty((n_startcluster*n_endcluster,2))*0.00001
         coeff_matrix = coeff_matrix.tolist()
-        for h in coeff_matrix:
-            h.clear()
     
     Start_clusters=data_frame['gps_start_cluster'].unique()
     End_clusters=data_frame['gps_end_cluster'].unique()
@@ -276,7 +274,7 @@ if __name__ == "__main__":
     Cluster_Labels(df_travel)
     Cluster_Labels(df_travel,group='gps_end_cluster')
 
-    """ m = Map(basemap=basemaps.OpenStreetMap.France, zoom=9, scroll_wheel_zoom=True)   
+    m = Map(basemap=basemaps.OpenStreetMap.France, zoom=9, scroll_wheel_zoom=True)   
     vals = [l for l in df_travel['start_gps_coord'].values]
     ctr = np.mean(vals, axis=0)
     m.center = list(ctr)
@@ -292,7 +290,10 @@ if __name__ == "__main__":
         m.add_layer(rectangle_start)
     for R_end in end_rec:
         rectangle_end = Rectangle(bounds=R_end,weight=2,color="#FF0000")
-        m.add_layer(rectangle_end) """
+        m.add_layer(rectangle_end)
+
+    m.save('my_map.html', title='My Map')
+
 
     df_travel=Remove_redundant_travels(df_travel)
 
@@ -332,10 +333,12 @@ if __name__ == "__main__":
     # plot violin chart
     ax = sns.violinplot( x='group', y='value', data=df)
     ax = sns.stripplot(x='group', y='value', data=df, color="orange", jitter=0.2, size=2.5)
+    plt.xlabel("Starting point")
+    plt.ylabel("Ending point")
 
 
     # add title
-    plt.title("Boxplot with jitter")
+    plt.title("Ending cluster distribution")
 
     # show the graph
     plt.show()

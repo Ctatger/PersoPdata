@@ -7,13 +7,23 @@ import random as rm
 
 class MK_chain :
     
+    
     def __init__(self,Prob_mat) -> None:
-        self.TOLERANCE_VALUE=0.0001
+        """__init__ Markov chain Class constructor
+
+        Arguments:
+            Prob_mat  -- Transition matrix of the markov chain
+
+        Raises:
+            ValueError: Sum of probibilities in a given row should always add up to 1
+        """
+        self.TOLERANCE_VALUE=0.0001 #Checking for exact value can be risky with floats
         self.transitionMatrix=Prob_mat
-        self.states=[str(x-1) for x in range(len(self.transitionMatrix))]
+        self.states=[str(x-1) for x in range(len(self.transitionMatrix))]#list of possible states represented in the matrix
 
         for i in range(len(self.states)):
             if abs(1 - sum(self.transitionMatrix[i])) > self.TOLERANCE_VALUE:
+                #Checking if values in each row of the transition matrix add up to 1
                 raise ValueError("probabilities don't add up to 1 (please keep the 10e-3 threshold in mind)",self.transitionMatrix[i])
 
     def predict(self,curr_st,filter=False):
