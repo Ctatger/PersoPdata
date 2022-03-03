@@ -2,6 +2,8 @@
 
 import seaborn as sns
 import matplotlib.pyplot as plt
+from matplotlib.pyplot import figure
+
 import statistics
 import pandas as pd
 from ast import literal_eval
@@ -82,7 +84,7 @@ def prepare_map(df, trip_to_track):
 def create_clusters(df, columns, clustering_method, header_name=None):
     if not header_name:
         header_name="_".join(columns)
-    df[header_name] = clustering_method.fit_predict(np.array([l for l in df_travel[columns].values]))
+    df[header_name] = clustering_method.fit_predict(np.array([l for l in df[columns].values]))
     df["gps_start_cluster_label"] = pd.NaT
     df["gps_end_cluster_label"] = pd.NaT
 
@@ -308,6 +310,7 @@ if __name__ == "__main__":
 
     Scores=Evaluate_model(df_travel,M_chain,Kfold_index,st_cluster,end_cluster)
 
+    figure(figsize=(16, 14), dpi=80)
     #graph of model's results
     plt.scatter(list(range(KFOLD)),Scores)
 
@@ -339,7 +342,6 @@ if __name__ == "__main__":
 
     # add title
     plt.title("Ending cluster distribution")
-
     # show the graph
     plt.show()
 #%%
