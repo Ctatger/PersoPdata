@@ -20,6 +20,7 @@ class MK_chain :
         self.TOLERANCE_VALUE=0.0001 #Checking for exact value can be risky with floats
         self.transitionMatrix=Prob_mat
         self.states=[str(x-1) for x in range(len(self.transitionMatrix))]#list of possible states represented in the matrix
+        self.gamma=None
 
         for i in range(len(self.states)):
             if abs(1 - sum(self.transitionMatrix[i])) > self.TOLERANCE_VALUE:
@@ -58,6 +59,18 @@ class MK_chain :
         
         self.states.append(new_state)
         self.transitionMatrix.append(new_probs)
+    
+    def Compute_gamma(self,df):
+        Start_clusters=df['gps_start_cluster'].unique()
+
+        P_daybased = []
+
+        for k in range(len(Start_clusters)):
+            Starting_points = df.loc[df['gps_start_cluster'] == Start_clusters[k]]
+            P_daybased.append((len(Starting_points)/len(df))*100)
+        self.gamma=P_daybased
+        return P_daybased
+
     
     def get_transmat(self):
         return self.transitionMatrix
