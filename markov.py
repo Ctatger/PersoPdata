@@ -71,7 +71,8 @@ class MK_chain :
         self.gamma=P_daybased
         return P_daybased
 
-    
+
+
     def get_transmat(self):
         return self.transitionMatrix
 

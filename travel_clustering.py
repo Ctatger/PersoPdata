@@ -174,6 +174,18 @@ def Compute_Proba(data_frame,n_startcluster,n_endcluster, coeff_matrix=None):
             raise ValueError("Probabilities not adding up to 1, check dataframe",Start_clusters[k])
     return coeff_matrix
 
+def Create_gamma(df):
+    gamma=[]
+    sample=len(df)
+    
+    for start in df['gps_start_cluster'].unique():
+        df_s=df.loc[df['gps_start_cluster'] == start]
+        print
+        gamma.append((len(df_s)/sample)*100)
+    if sum(gamma) > 100.5:
+        raise ValueError("Gamma matrix coefficients not adding up to 1")
+    return gamma
+
 def Create_ProbabilityMatrix(data_frame,coeff_mat=None):
     T_matrix=[]
     State_prob=[]
