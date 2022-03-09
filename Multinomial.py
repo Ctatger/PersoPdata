@@ -1,48 +1,61 @@
 # %%
-from calendar import weekday
-from nis import match
-from telnetlib import TM
+
+import seaborn as sns
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.pyplot import figure
-from ast import literal_eval
-from travel_clustering import create_clusters, Cluster_Labels, Compute_Proba, Create_ProbabilityMatrix, Create_gamma
-from sklearn.cluster import DBSCAN
 
-#import statsmodels.api as sm
 import math as mt
 
+from matplotlib.pyplot import figure
+from ast import literal_eval
+from travel_clustering import create_clusters, Cluster_Labels,\
+    Compute_Proba, Create_ProbabilityMatrix, Create_gamma, \
+    Remove_redundant_travels
+from sklearn.cluster import DBSCAN
+from sklearn.linear_model import LinearRegression
+from markov import MK_chain
+from sklearn.model_selection import train_test_split
+
+# default='warn', disables annoying warning
+pd.options.mode.chained_assignment = None
 
 # %%
+
+
 def Time_Slot(df):
-    HOUR_EarlyMorning = (0, 7)
-    HOUR_Morning = (7, 10)
-    HOUR_Midday = (10, 16)
-    HOUR_Evening = (16, 19)
-    HOUR_LateEvening = (19, 24)
-    # nuit a add
+    """Parse dataframe to assign a time slot to each trip's start time
 
-    df['time_slot'] = pd.NaT
+    Arguments:
+        df {pandas.dataframe} -- dataframe, containing clusters ID for start
+                                    and arrival
 
-    slot = {"HOUR_EarlyMorning": (0, 7), "HOUR_Morning": (7, 11), "HOUR_Midday": (11, 17), "HOUR_Evening": (17, 20),
+    Returns:
+        pandas.dataframe -- Input dataframe with new 'time_slot' column added
+    """
+    df.loc[:, 'time_slot'] = pd.NaT
+
+    slot = {"HOUR_EarlyMorning": (0, 7), "HOUR_Morning": (7, 11),
+            "HOUR_Midday": (11, 17), "HOUR_Evening": (17, 20),
             "HOUR_LateEvening": (20, 24)}
 
     for idc, rows in df.iterrows():
         for i in slot.values():
             hour = rows['start_hour_hmin'].split(":")
             if int(hour[0]) in (list(range(i[0], i[1]))):
-                df.loc[idc, 'time_slot'] = list(slot.keys())[list(slot.values()).index(i)]
+                t_slot = list(slot.keys())[list(slot.values()).index(i)]
+                df.loc[idc, 'time_slot'] = t_slot
     return df
 
 
 def Standard_Scaler(feature_array):
-    """Takes the numpy.ndarray object containing the features and performs standardization on the matrix.
-    The function iterates through each column and performs scaling on them individually.
-    
+    """Takes the numpy.ndarray object containing the features and performs
+    standardization on the matrix.The function iterates through each column
+    and performs scaling on them individually.
+
     Args-
         feature_array- Numpy array containing training features
-    
+
     Returns-
         None
     """
@@ -51,19 +64,22 @@ def Standard_Scaler(feature_array):
     for i in range(total_cols):  # iterating through each column
         feature_col = feature_array[:, i]
         mean = feature_col.mean()  # mean stores mean value for the column
-        std = feature_col.std()  # std stores standard deviation value for the column
-        feature_array[:, i] = (feature_array[:, i] - mean) / std  # standard scaling of each element of the column
+        # std stores standard deviation value for the column
+        std = feature_col.std()
+        # standard scaling of each element of the column
+        feature_array[:, i] = (feature_array[:, i] - mean) / std
 
 
 def Compute_Weekbased(df):
     """Parse dataframe to process the probabilities based on time of the week
 
     Arguments:
-        df {pandas.dataframe} -- dataframe, containing clusters ID for start and arrival
+        df {pandas.dataframe} -- dataframe, containing clusters ID
+                                    for start and arrival
 
     Returns:
-        Dict -- Key: weekday/weekend 
-                    Value: Probability for each cluster to be selected 
+        Dict -- Key: weekday/weekend
+                    Value: Probability for each cluster to be selected
     """
     end_cluster = df.gps_end_cluster.unique()
 
@@ -104,11 +120,13 @@ def Compute_Daybased(df):
     """Parse dataframe to process the probabilities based on time slot
 
     Arguments:
-        df {pandas.dataframe} -- dataframe, containing clusters ID for start and arrival
+        df {pandas.dataframe} -- dataframe, containing clusters ID
+                                    for start and arrival
 
     Returns:
-        Dict -- Key: Day of the week & 
-                    Value: Probability for each cluster to be selected depending on time slot
+        Dict -- Key: Day of the week &
+                    Value: Probability for each cluster to be selected
+                    depending on time slot
     """
 
     end_cluster = df.gps_end_cluster.unique()
@@ -135,6 +153,17 @@ def Compute_Daybased(df):
 
 
 def Compute_Markov(df):
+    """Processes dataframe to create intitial state and
+        transition matrix of markov chain
+
+    Arguments:
+        df {pandas.dataframe} -- dataframe, containing clusters ID
+                                    for start and arrival
+
+    Returns:
+        (list,list) -- Initial state matrix (gamma) and
+                        Transition state matrix(TMat)
+    """
     st_cluster = len(df.gps_start_cluster.unique())
     end_cluster = len(df.gps_end_cluster.unique())
 
@@ -146,7 +175,7 @@ def Compute_Markov(df):
 
 
 def fit_trip(daybased, weekbased, markov, day, t_slot, end_cluster):
-    const = 0
+    """const = 0
     alpha, beta, delta = (0,) * 3
 
     if day in list(range(5)):
@@ -154,8 +183,9 @@ def fit_trip(daybased, weekbased, markov, day, t_slot, end_cluster):
     else:
         weekpart = "weekend"
 
-    Prob = const + alpha * weekbased[weekpart][t_slot][end_cluster] + beta * daybased[day][t_slot][
-        end_cluster] + delta * max(markov)
+    Prob = const + alpha * weekbased[weekpart][t_slot][end_cluster]
+            + beta * daybased[day][t_slot][
+        end_cluster] + delta * max(markov)"""
 
 
 def fit(df, daybased, weekbased, markov):
@@ -164,7 +194,8 @@ def fit(df, daybased, weekbased, markov):
     for day in range(7):
         for slot in df['time_slot'].unique():
             for end in df.gps_end_cluster.unique():
-                Coefficients.append(fit_trip(daybased, weekbased, markov, slot, end))
+                Coefficients.append(fit_trip(daybased, weekbased,
+                                    markov, slot, end))
 
     alpha = np.mean([i[0] for i in Coefficients])
     beta = np.mean([i[1] for i in Coefficients])
@@ -173,7 +204,8 @@ def fit(df, daybased, weekbased, markov):
 
 
 def predict(Vin_array):
-    """Computes the probability for each destination to be selected and returns the most likely pick
+    """Computes the probability for each destination to be selected
+        and returns the most likely pick
 
     Arguments:
         Vin_array {array} -- Contains deterministic components for each cluster
@@ -189,7 +221,9 @@ def predict(Vin_array):
 
 
 def Graph_Cluster(Mat):
-    fig, axs = plt.subplots(3, 3, figsize=(15, 6), facecolor='w', edgecolor='k')
+    fig, axs = plt.subplots(3, 3, figsize=(15, 6),
+                            facecolor='w', edgecolor='k')
+
     fig.subplots_adjust(hspace=.5, wspace=.001)
 
     axs = axs.ravel()
@@ -199,30 +233,76 @@ def Graph_Cluster(Mat):
 
 
 if __name__ == "__main__":
-    # TODO: Adapter le main aux fonctions de probabilités crées et
-    #       commencer à créer le scipt de calcul d'estimation (fonction fit)
+
+    # Sets the graphical theme as seaborn default
+    sns.set_theme()
     figure(figsize=(1, 1))
 
+    # Parsing
     df_travel = pd.read_csv("csv/travel_based_dataframe.csv", index_col=0,
-                            converters={"start_gps_coord": literal_eval, "end_gps_coord": literal_eval,
+                            converters={"start_gps_coord": literal_eval,
+                                        "end_gps_coord": literal_eval,
                                         "travel_gps_list": literal_eval})
+
     df_travel = df_travel[df_travel['travel_distance_km'] > 0.5]
 
+    # Cluster classification using DBSCAN
     dbscan = DBSCAN(eps=0.005, min_samples=3)
-    create_clusters(df_travel, 'start_gps_coord', dbscan, header_name='gps_start_cluster')
+    create_clusters(df_travel, 'start_gps_coord', dbscan,
+                    header_name='gps_start_cluster')
 
-    # Classifie les trajets et ajoute une colonne avec l'ID cluster à la df
     dbscan = DBSCAN(eps=0.005, min_samples=3)
-    create_clusters(df_travel, 'end_gps_coord', dbscan, header_name='gps_end_cluster')
+    create_clusters(df_travel, 'end_gps_coord', dbscan,
+                    header_name='gps_end_cluster')
+
+    noise_ID = min(df_travel['gps_end_cluster'].unique())
+
+    df_travel = df_travel[df_travel['gps_end_cluster'] != noise_ID]
+    df_travel = df_travel[df_travel['gps_start_cluster'] != noise_ID]
+    # Adds location label, using gps street data
     Cluster_Labels(df_travel)
+    df_travel = Remove_redundant_travels(df_travel)
 
-    g, T_markov = Compute_Markov(df_travel)
-    P_markov = np.matmul(g, T_markov)
+
+    # Saving probability for each feature of the multinomial model
+
     P_daybased = Compute_Daybased(df_travel)
     P_weekbased = Compute_Weekbased(df_travel)
 
-    target = df_travel['gps_end_cluster']
-    print('test')
-    # %%
+    # Markov chain creation
+    g, T_markov = Compute_Markov(df_travel)
+    M_chain = MK_chain(T_markov)
 
-# %%
+    P_markov = np.matmul(g, T_markov)
+    # Creating a list of predictions for each trip
+    pred_markov = np.ones((len(df_travel)), dtype=int)*np.argmax(P_markov)
+    pred_week = np.ones((len(df_travel)), dtype=int)
+    pred_day = []
+
+    # pred_markov = np.array(list(map(int, pred_markov)))
+    pred_week = np.array(list(map(int, pred_week)))
+    pred_day = np.array(list(map(int, pred_day)))
+
+    d = {"Markov": pred_markov, "Week": pred_week, "Day": pred_day}
+    mle_dataset = pd.DataFrame(data=d)
+    ground_truth = df_travel['gps_end_cluster'].values
+    # Initial analysis of the model's parameters
+    # model = sm.OLS(Ground_truth, Preds.astype(float))
+    # results = model.fit()
+
+    
+
+    x_train, x_test, y_train, y_test = train_test_split(pred_markov,
+                                                        ground_truth,
+                                                        test_size=0.3,
+                                                        random_state=100)
+
+    x_train = x_train.reshape(-1, 1)
+    y_train = y_train.reshape(-1, 1)
+    x_test = x_test.reshape(-1, 1)
+
+    mlr = LinearRegression()
+    mlr.fit(x_train, y_train)
+
+    y_pred = np.around(mlr.predict(x_test))
+    # %%

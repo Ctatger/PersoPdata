@@ -149,8 +149,8 @@ def Cluster_Labels(data_frame,group='gps_start_cluster'):
 
 def Compute_Proba(data_frame,n_startcluster,n_endcluster, coeff_matrix=None):
     
-    if coeff_matrix is None:#TODO: Creer coeff de la bonne longueur directement startcluster*endcluster
-        coeff_matrix = np.empty((n_startcluster*n_endcluster,2))*0.00001
+    if coeff_matrix is None:
+        coeff_matrix = np.ones((n_startcluster*n_endcluster,2))*1e-6
         coeff_matrix = coeff_matrix.tolist()
     
     Start_clusters=data_frame['gps_start_cluster'].unique()
@@ -180,7 +180,6 @@ def Create_gamma(df):
     
     for start in df['gps_start_cluster'].unique():
         df_s=df.loc[df['gps_start_cluster'] == start]
-        print
         gamma.append((len(df_s)/sample)*100)
     if sum(gamma) > 100.5:
         raise ValueError("Gamma matrix coefficients not adding up to 1")

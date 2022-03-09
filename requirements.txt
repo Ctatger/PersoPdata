@@ -123,3 +123,5 @@ widgetsnbextension==3.5.2
 wrapt==1.13.3
 xyzservices==2022.1.1
 zipp==3.7.0
+
+statsmodels~=0.13.2
