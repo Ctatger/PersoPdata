@@ -10,7 +10,7 @@ from ast import literal_eval
 from ipyleaflet import Map, Polyline, basemaps, CircleMarker, DivIcon, Marker, DrawControl, Rectangle
 import numpy as np
 from sklearn import cluster
-from sklearn.cluster import DBSCAN
+from sklearn.cluster import DBSCAN,AgglomerativeClustering
 import random
 from markov import MK_chain
 
@@ -246,7 +246,7 @@ def Evaluate_model(data_frame,M_chain,Kfold_index,n_startcluster,n_endcluster):
 #%%
 
 if __name__ == "__main__":
-
+    # TODO: Evolution des probas en fonction de l'ajout au dataset 
     sns.set_theme()
 
     WEEKDAY=(0,5)
@@ -273,10 +273,13 @@ if __name__ == "__main__":
     m = prepare_map(df_travel, trip_to_track)
 
     #Classifie les trajets et ajoute une colonne avec l'ID cluster à la df
+
     dbscan = DBSCAN(eps=0.005, min_samples=3)
+    agglo=AgglomerativeClustering(n_clusters=5)
     create_clusters(df_travel, 'start_gps_coord', dbscan, header_name='gps_start_cluster')
 
     #Classifie les trajets et ajoute une colonne avec l'ID cluster à la df
+    agglo=AgglomerativeClustering(n_clusters=5)
     dbscan = DBSCAN(eps=0.005, min_samples=3)
     create_clusters(df_travel, 'end_gps_coord', dbscan, header_name='gps_end_cluster')
 

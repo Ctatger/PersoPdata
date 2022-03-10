@@ -1,9 +1,9 @@
 # %%
-
+import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+
 
 import math as mt
 
@@ -15,7 +15,7 @@ from travel_clustering import create_clusters, Cluster_Labels,\
 from sklearn.cluster import DBSCAN
 from sklearn.linear_model import LinearRegression
 from markov import MK_chain
-from sklearn.model_selection import train_test_split
+from data_parsing import create_dataframe
 
 # default='warn', disables annoying warning
 pd.options.mode.chained_assignment = None
@@ -174,6 +174,30 @@ def Compute_Markov(df):
     return gamma, TMat
 
 
+def predict_trip(df, day, slot, P_type='day'):
+    maxi = 0
+    maxi_id = 0
+    if P_type == 'day':
+        pred = Compute_Daybased(df)
+        for i in df.gps_end_cluster.unique():
+            if pred[day][slot][i] > maxi:
+                maxi = pred[day][slot][i]
+                maxi_id = i
+        return maxi_id
+    if P_type == 'week':
+        pred = Compute_Weekbased(df)
+        if day > 4:
+            part = 'weekdend'
+        else:
+            part = 'weekday'
+
+        for i in df.gps_end_cluster.unique():
+            if pred[part][slot][i] > maxi:
+                maxi = pred[part][slot][i]
+                maxi_id = i
+    return maxi_id
+
+
 def fit_trip(daybased, weekbased, markov, day, t_slot, end_cluster):
     """const = 0
     alpha, beta, delta = (0,) * 3
@@ -259,15 +283,10 @@ if __name__ == "__main__":
 
     df_travel = df_travel[df_travel['gps_end_cluster'] != noise_ID]
     df_travel = df_travel[df_travel['gps_start_cluster'] != noise_ID]
+
     # Adds location label, using gps street data
     Cluster_Labels(df_travel)
     df_travel = Remove_redundant_travels(df_travel)
-
-
-    # Saving probability for each feature of the multinomial model
-
-    P_daybased = Compute_Daybased(df_travel)
-    P_weekbased = Compute_Weekbased(df_travel)
 
     # Markov chain creation
     g, T_markov = Compute_Markov(df_travel)
@@ -275,34 +294,24 @@ if __name__ == "__main__":
 
     P_markov = np.matmul(g, T_markov)
     # Creating a list of predictions for each trip
-    pred_markov = np.ones((len(df_travel)), dtype=int)*np.argmax(P_markov)
-    pred_week = np.ones((len(df_travel)), dtype=int)
-    pred_day = []
+    p_markov = np.ones((len(df_travel)), dtype=int)*np.argmax(P_markov)
+    p_week = np.ones((len(df_travel)), dtype=int)*predict_trip(df_travel, 3,
+                                                               'HOUR_Morning',
+                                                               P_type='week')
+    p_day = np.ones((len(df_travel)), dtype=int)*predict_trip(df_travel, 3,
+                                                              'HOUR_Morning',
+                                                              P_type='day')
 
-    # pred_markov = np.array(list(map(int, pred_markov)))
-    pred_week = np.array(list(map(int, pred_week)))
-    pred_day = np.array(list(map(int, pred_day)))
-
-    d = {"Markov": pred_markov, "Week": pred_week, "Day": pred_day}
+    d = {"Markov": p_markov, "Week": p_week, "Day": p_day}
     mle_dataset = pd.DataFrame(data=d)
+    preds = mle_dataset[['Markov', 'Week', 'Day']]
     ground_truth = df_travel['gps_end_cluster'].values
     # Initial analysis of the model's parameters
     # model = sm.OLS(Ground_truth, Preds.astype(float))
     # results = model.fit()
 
-    
-
-    x_train, x_test, y_train, y_test = train_test_split(pred_markov,
-                                                        ground_truth,
-                                                        test_size=0.3,
-                                                        random_state=100)
-
-    x_train = x_train.reshape(-1, 1)
-    y_train = y_train.reshape(-1, 1)
-    x_test = x_test.reshape(-1, 1)
-
     mlr = LinearRegression()
-    mlr.fit(x_train, y_train)
+    mlr.fit(preds, ground_truth)
 
-    y_pred = np.around(mlr.predict(x_test))
+    # y_pred = np.around(mlr.predict(x_test))
     # %%
