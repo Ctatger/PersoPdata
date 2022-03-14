@@ -9,11 +9,15 @@ from data_parsing import create_dataframe
 
 
 def evaluate_mk(df, mk):
-
     acc_total = 0
-    for _, row in df.iterrows():
-        pred = mk.predict(str(row['gps_start_cluster']))
-        answ = str(row['gps_end_cluster'])
+    for r_id in range(len(df)):
+
+        row = df.iloc[[r_id]]
+        start = row['gps_start_cluster'].values
+
+        pred = mk.predict(str(start[0]))
+        answ = str(row['gps_end_cluster'].values[0])
+
         if pred == answ:
             acc_total += 1
     return (acc_total/len(df))*100
@@ -44,18 +48,15 @@ class MK_chain:
 
         self.create_transition_matrix()
 
-        self.states = [str(x) for x in range(len(self.transitionMatrix))]
+    def predict(self, curr_st):
 
-    def predict(self, curr_st, filter=False):
-        if not filter:
+        if curr_st in self.states:
             st_id = self.states.index(curr_st)
-            pred_id = self.transitionMatrix[st_id].index(max(self.transitionMatrix[st_id]))
+            most_likely = max(self.transitionMatrix[st_id])
+            pred_id = np.where(self.transitionMatrix[st_id] == most_likely)[0][0]
+            return self.states[pred_id]
         else:
-            st_id = self.states.index(curr_st)
-            order = self.transitionMatrix[st_id].copy()
-            order.sort(reverse=True)
-            pred_id = self.transitionMatrix[st_id].index(order[1])
-        return self.states[pred_id]
+            return('-1')
 
     def update_transmat(self, st, prob_list):
         if abs(1-sum(prob_list)) > self.TOLERANCE_VALUE:
@@ -123,6 +124,8 @@ class MK_chain:
         self.gamma = self.create_gamma()
         self.transitionMatrix = t_mat
 
+        self.states = [str(x) for x in range(len(self.transitionMatrix))]
+
         return gamma, t_mat
 
     def create_gamma(self):
@@ -176,18 +179,22 @@ if __name__ == "__main__":
 
     sns.set_theme()
 
-    df_travel = create_dataframe()
-    mk_true = MK_chain(df_travel)
-    # df_travel = df_travel.sample(frac=1)
+    epoch_acc = []
+    for epoch in range(5):
+        df_travel = create_dataframe()
+        df_travel = df_travel.sample(frac=1)
 
-    df_train = df_travel[:10]
-    df_data = df_travel[10:]
-    df_data.reset_index(drop=True)
+        df_data = df_travel[:1]
+        df_train = df_travel[1:50]
+        df_test = df_travel[50:]
+        df_data.reset_index(drop=True)
 
-    mk_travel = MK_chain(df=df_train)
+        mk_travel = MK_chain(df=df_data)
+        model_acc = []
 
-    for r_id in range(len(df_data)):
-        mk_travel.fit(df_data.iloc[[r_id]])
+        for r_id in range(len(df_train)):
+            mk_travel.fit(df_train.iloc[[r_id]])
+            model_acc.append(evaluate_mk(df_test, mk_travel))
 
-    line_test = df_travel.iloc[[69]]
+        epoch_acc.append(model_acc)
 # %%

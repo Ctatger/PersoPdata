@@ -25,9 +25,8 @@ def create_dataframe():
     create_clusters(df_travel, 'end_gps_coord', dbscan,
                     header_name='gps_end_cluster')
 
-    noise_ID = min(df_travel['gps_end_cluster'].unique())
-    df_travel = df_travel[df_travel['gps_end_cluster'] != noise_ID]
-    df_travel = df_travel[df_travel['gps_start_cluster'] != noise_ID]
+    df_travel = df_travel[df_travel['gps_end_cluster'] != -1]
+    df_travel = df_travel[df_travel['gps_start_cluster'] != -1]
 
     # Adds location label, using gps street data
     Cluster_Labels(df_travel)
