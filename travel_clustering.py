@@ -12,7 +12,7 @@ import numpy as np
 from sklearn import cluster
 from sklearn.cluster import DBSCAN,AgglomerativeClustering
 import random
-from markov import MK_chain
+
 
 def color_str(r,g,b):
     return '#'+'0x{:02x}'.format(min(r,255))[2:]+'0x{:02x}'.format(min(g,255))[2:]+'0x{:02x}'.format(min(b,255))[2:]

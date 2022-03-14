@@ -8,16 +8,12 @@ import pandas as pd
 import math as mt
 
 from matplotlib.pyplot import figure
-from ast import literal_eval
-from travel_clustering import create_clusters, Cluster_Labels,\
-    Compute_Proba, Create_ProbabilityMatrix, Create_gamma, \
-    Remove_redundant_travels
-from sklearn.cluster import DBSCAN
-from sklearn.linear_model import LinearRegression
-from markov import MK_chain
 from data_parsing import create_dataframe
+from travel_clustering import Compute_Proba, Create_ProbabilityMatrix, Create_gamma
+from sklearn.linear_model import LinearRegression
 
-# default='warn', disables annoying warning
+
+# chaine_assignement by default='warn', disables annoying warning by setting to None
 pd.options.mode.chained_assignment = None
 
 # %%
@@ -262,35 +258,10 @@ if __name__ == "__main__":
     sns.set_theme()
     figure(figsize=(1, 1))
 
-    # Parsing
-    df_travel = pd.read_csv("csv/travel_based_dataframe.csv", index_col=0,
-                            converters={"start_gps_coord": literal_eval,
-                                        "end_gps_coord": literal_eval,
-                                        "travel_gps_list": literal_eval})
-
-    df_travel = df_travel[df_travel['travel_distance_km'] > 0.5]
-
-    # Cluster classification using DBSCAN
-    dbscan = DBSCAN(eps=0.005, min_samples=3)
-    create_clusters(df_travel, 'start_gps_coord', dbscan,
-                    header_name='gps_start_cluster')
-
-    dbscan = DBSCAN(eps=0.005, min_samples=3)
-    create_clusters(df_travel, 'end_gps_coord', dbscan,
-                    header_name='gps_end_cluster')
-
-    noise_ID = min(df_travel['gps_end_cluster'].unique())
-
-    df_travel = df_travel[df_travel['gps_end_cluster'] != noise_ID]
-    df_travel = df_travel[df_travel['gps_start_cluster'] != noise_ID]
-
-    # Adds location label, using gps street data
-    Cluster_Labels(df_travel)
-    df_travel = Remove_redundant_travels(df_travel)
+    df_travel = create_dataframe()
 
     # Markov chain creation
     g, T_markov = Compute_Markov(df_travel)
-    M_chain = MK_chain(T_markov)
 
     P_markov = np.matmul(g, T_markov)
     # Creating a list of predictions for each trip
