@@ -3,6 +3,7 @@
 from math import gamma
 import seaborn as sns
 import numpy as np
+import pandas as pd
 
 from data_parsing import create_dataframe
 
@@ -117,7 +118,6 @@ class MK_chain:
 
         for i in range(1, size+1):
             vect = self.create_proba_vector(i)
-            print(vect)
             t_mat = np.vstack((t_mat, vect))
 
         self.gamma = self.create_gamma()
@@ -135,6 +135,40 @@ class MK_chain:
         if sum(gamma) > 100.5:
             raise ValueError("Gamma matrix coefficients not adding up to 1")
         return gamma
+
+    def fit(self, new):
+
+        start = new['gps_start_cluster'].values
+        end = new['gps_end_cluster'].values
+
+        frames = [self.data_frame, new]
+        self.data_frame = pd.concat(frames)
+
+        if (start > self.Start_clusters[-1] or end > self.End_clusters[-1]):
+
+            self.Start_clusters = self.data_frame['gps_start_cluster'].unique()
+            self.Start_clusters.sort()
+            self.End_clusters = self.data_frame['gps_end_cluster'].unique()
+            self.End_clusters.sort()
+
+            self.create_transition_matrix()
+
+        else:
+
+            for start_point in start:
+                for end_point in end:
+                    for freq in self.sum_mat:
+
+                        if (freq[0] == start_point and freq[1] == end_point):
+                            new_id = self.sum_mat.index(freq)
+                            self.sum_mat[new_id][2] += 1
+
+            for i in start:
+                vect = self.create_proba_vector(i)
+                self.transitionMatrix[i] = vect
+                self.gamma = self.create_gamma()
+
+
 # %%
 
 
@@ -143,19 +177,17 @@ if __name__ == "__main__":
     sns.set_theme()
 
     df_travel = create_dataframe()
-    df_travel = df_travel.sample(frac=1)
+    mk_true = MK_chain(df_travel)
+    # df_travel = df_travel.sample(frac=1)
 
-    df_train = df_travel[:15]
-    df_data = df_travel[15:]
+    df_train = df_travel[:10]
+    df_data = df_travel[10:]
+    df_data.reset_index(drop=True)
 
     mk_travel = MK_chain(df=df_train)
 
-    """ J=0
-    for i in range(5,len(df_travel),5):
-        print(df_travel[J:i])
-        J=i
-    a = mk_travel.get_transmat() """
+    for r_id in range(len(df_data)):
+        mk_travel.fit(df_data.iloc[[r_id]])
 
-    test_df = df_travel.sample(frac=0.5)
-    print(evaluate_mk(test_df, mk_travel))
+    line_test = df_travel.iloc[[69]]
 # %%
