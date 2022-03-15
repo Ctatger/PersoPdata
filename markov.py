@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from data_parsing import create_dataframe
+from matplotlib.pyplot import figure
 
 
 def evaluate_mk(df, mk):
@@ -47,44 +48,6 @@ class MK_chain:
 
         self.create_transition_matrix()
 
-    def predict(self, curr_st):
-
-        if curr_st in self.states:
-            st_id = self.states.index(curr_st)
-            most_likely = max(self.transitionMatrix[st_id])
-            pred_id = np.where(self.transitionMatrix[st_id] == most_likely)[0][0]
-            return self.states[pred_id]
-        else:
-            return('-1')
-
-    def update_transmat(self, st, prob_list):
-        if abs(1-sum(prob_list)) > self.TOLERANCE_VALUE:
-            raise ValueError("New probabilities don't add up to 1 (please keep the 10e-3 threshold in mind)")
-
-        state_id = self.states.index(st)
-        self.transitionMatrix[state_id] = prob_list
-
-    def add_state(self, new_state, new_probs, old_probs):
-
-        for k in old_probs:
-            if abs(1-sum(k)) > self.TOLERANCE_VALUE:
-                raise ValueError("New probabilities don't add up to 1 (please keep the 10e-3 threshold in mind)")
-
-        if abs(1-sum(new_probs)) > self.TOLERANCE_VALUE:
-            raise ValueError("Probabilities for new state don't add up to 1 (please keep the 10e-3 threshold in mind)")
-
-        for i in range(len(self.states)):
-            self.transitionMatrix[i] = old_probs[i]
-
-        self.states.append(new_state)
-        self.transitionMatrix.append(new_probs)
-
-    def get_transmat(self):
-        return self.transitionMatrix
-
-    def get_states(self):
-        return self.states
-
     def create_sum_matrix(self):
 
         for Start in self.Start_clusters:
@@ -100,9 +63,9 @@ class MK_chain:
     def create_proba_vector(self, Start):
 
         size = max(self.End_clusters[-1], self.Start_clusters[-1])
-        print(self.End_clusters, self.Start_clusters)
-        if size == 0:
-            print(self.data_frame)
+        if size == 1:
+            size = 1
+
         proba_vector = np.zeros(size+1)
         starting_points = self.data_frame.loc[self.data_frame['gps_start_cluster'] == Start]
         sample = len(starting_points)
@@ -112,11 +75,24 @@ class MK_chain:
                 proba_vector[freq[1]] = (freq[2]/sample)*100
         return proba_vector
 
+    def create_gamma(self):
+        gamma = []
+        sample = len(self.data_frame)
+
+        for start in self.Start_clusters:
+            df_s = self.data_frame.loc[self.data_frame['gps_start_cluster'] == start]
+            gamma.append((len(df_s)/sample)*100)
+        if sum(gamma) > 100.5:
+            raise ValueError("Gamma matrix coefficients not adding up to 1")
+        return gamma
+
     def create_transition_matrix(self):
 
         self.create_sum_matrix()
 
         size = max(self.End_clusters[-1], self.Start_clusters[-1])
+        if size == 0:
+            size = 1
         t_mat = np.array(self.create_proba_vector(0))
 
         for i in range(1, size+1):
@@ -129,17 +105,6 @@ class MK_chain:
         self.states = [str(x) for x in range(len(self.transitionMatrix))]
 
         return gamma, t_mat
-
-    def create_gamma(self):
-        gamma = []
-        sample = len(self.data_frame)
-
-        for start in self.Start_clusters:
-            df_s = self.data_frame.loc[self.data_frame['gps_start_cluster'] == start]
-            gamma.append((len(df_s)/sample)*100)
-        if sum(gamma) > 100.5:
-            raise ValueError("Gamma matrix coefficients not adding up to 1")
-        return gamma
 
     def fit(self, new):
 
@@ -176,7 +141,15 @@ class MK_chain:
                 self.transitionMatrix[i] = vect
                 self.gamma = self.create_gamma()
 
-        # print(self.transitionMatrix)
+    def predict(self, curr_st):
+
+        if curr_st in self.states:
+            st_id = self.states.index(curr_st)
+            most_likely = max(self.transitionMatrix[st_id])
+            pred_id = np.where(self.transitionMatrix[st_id] == most_likely)[0][0]
+            return self.states[pred_id]
+        else:
+            return('-1')
 
 
 # %%
@@ -188,7 +161,7 @@ if __name__ == "__main__":
     palette = plt.get_cmap('Set1')
 
     epoch_acc = []
-
+    figure(figsize=(16, 14), dpi=80)
     for i in range(10):
 
         df_travel = create_dataframe()
@@ -197,7 +170,6 @@ if __name__ == "__main__":
         df_data = df_travel[:1]
         df_train = df_travel[1:50]
         df_test = df_travel[50:]
-        df_data.reset_index(drop=True)
 
         mk_travel = MK_chain(df=df_data)
         model_acc = []
@@ -209,6 +181,7 @@ if __name__ == "__main__":
             model_acc.append(evaluate_mk(df_test, mk_travel))
 
         epoch_acc.append(model_acc)
+        print("Epoch {} done.".format(i))
 
     for k in range(1, 10):
         plt.subplot(3, 3, k)
