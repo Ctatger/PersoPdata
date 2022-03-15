@@ -1,5 +1,5 @@
 # %%
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from math import gamma
 import seaborn as sns
 import numpy as np
@@ -14,7 +14,6 @@ def evaluate_mk(df, mk):
 
         row = df.iloc[[r_id]]
         start = row['gps_start_cluster'].values
-
         pred = mk.predict(str(start[0]))
         answ = str(row['gps_end_cluster'].values[0])
 
@@ -101,6 +100,9 @@ class MK_chain:
     def create_proba_vector(self, Start):
 
         size = max(self.End_clusters[-1], self.Start_clusters[-1])
+        print(self.End_clusters, self.Start_clusters)
+        if size == 0:
+            print(self.data_frame)
         proba_vector = np.zeros(size+1)
         starting_points = self.data_frame.loc[self.data_frame['gps_start_cluster'] == Start]
         sample = len(starting_points)
@@ -148,7 +150,6 @@ class MK_chain:
         self.data_frame = pd.concat(frames)
 
         if (start > self.Start_clusters[-1] or end > self.End_clusters[-1]):
-
             self.Start_clusters = self.data_frame['gps_start_cluster'].unique()
             self.Start_clusters.sort()
             self.End_clusters = self.data_frame['gps_end_cluster'].unique()
@@ -157,6 +158,10 @@ class MK_chain:
             self.create_transition_matrix()
 
         else:
+            self.Start_clusters = self.data_frame['gps_start_cluster'].unique()
+            self.Start_clusters.sort()
+            self.End_clusters = self.data_frame['gps_end_cluster'].unique()
+            self.End_clusters.sort()
 
             for start_point in start:
                 for end_point in end:
@@ -171,6 +176,8 @@ class MK_chain:
                 self.transitionMatrix[i] = vect
                 self.gamma = self.create_gamma()
 
+        # print(self.transitionMatrix)
+
 
 # %%
 
@@ -178,9 +185,12 @@ class MK_chain:
 if __name__ == "__main__":
 
     sns.set_theme()
+    palette = plt.get_cmap('Set1')
 
     epoch_acc = []
-    for epoch in range(5):
+
+    for i in range(10):
+
         df_travel = create_dataframe()
         df_travel = df_travel.sample(frac=1)
 
@@ -192,9 +202,34 @@ if __name__ == "__main__":
         mk_travel = MK_chain(df=df_data)
         model_acc = []
 
+        trainset_lenghts = list(range(1, 50))
+
         for r_id in range(len(df_train)):
             mk_travel.fit(df_train.iloc[[r_id]])
             model_acc.append(evaluate_mk(df_test, mk_travel))
 
         epoch_acc.append(model_acc)
+
+    for k in range(1, 10):
+        plt.subplot(3, 3, k)
+        for epoch in range(1, 10):
+            plt.plot(trainset_lenghts, epoch_acc[epoch], marker='', color='grey', linewidth=0.6, alpha=0.3)
+        plt.plot(trainset_lenghts, epoch_acc[k], marker='', color=palette(k), linewidth=2.4, alpha=0.9)
+
+        y_ticks = np.arange(0, 101, 25)
+        x_ticks = np.arange(0, 51, 10)
+        ax = plt.gca()
+        # Not ticks everywhere
+        if k not in [7, 8, 9]:
+            ax.set_xticklabels([])
+        if k not in [1, 4, 7]:
+            ax.set_yticklabels([])
+
+        ax.set_ylim([0, 100])
+        ax.set_yticks(y_ticks)
+        ax.set_xticks(x_ticks)
+
+    plt.show()
+
+
 # %%
