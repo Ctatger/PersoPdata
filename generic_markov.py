@@ -1,11 +1,10 @@
 # %%
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
 import pandas as pd
+import numpy as np
+from random import randint
+
 
 from data_parsing import create_dataframe
-from matplotlib.pyplot import figure
 
 
 def evaluate_mk(df, mk):
@@ -13,29 +12,16 @@ def evaluate_mk(df, mk):
     for r_id in range(len(df)):
 
         row = df.iloc[[r_id]]
-        start = row['gps_start_cluster'].values
+        start = row['Start_cluster'].values
         pred = mk.predict(str(start[0]))
-        answ = str(row['gps_end_cluster'].values[0])
+        answ = str(row['End_cluster'].values[0])
 
         if pred == answ:
             acc_total += 1
     return (acc_total/len(df))*100
 
 
-def evaluate_gamma_mk(df, mk):
-    acc_total = 0
-    for r_id in range(len(df)):
-
-        row = df.iloc[[r_id]]
-        pred = mk.gamma_predict()
-        answ = str(row['gps_end_cluster'].values[0])
-
-        if pred == answ:
-            acc_total += 1
-    return (acc_total/len(df))*100
-
-
-class MK_chain:
+class generic_markov:
     def __init__(self, df):
         """MK_chain class constructor, computes transition matrix and gamma from given dataframe
 
@@ -51,9 +37,9 @@ class MK_chain:
         self.TOLERANCE_VALUE = 0.0001
 
         # Trip clusters informations
-        self.Start_clusters = self.data_frame['gps_start_cluster'].unique()
+        self.Start_clusters = self.data_frame['Start_cluster'].unique()
         self.Start_clusters.sort()
-        self.End_clusters = self.data_frame['gps_end_cluster'].unique()
+        self.End_clusters = self.data_frame['End_cluster'].unique()
         self.End_clusters.sort()
 
         # Computes and stores Transition matrix and gamma vector
@@ -65,10 +51,10 @@ class MK_chain:
         """
         for Start in self.Start_clusters:
             Total = 0
-            Starting_points = self.data_frame.loc[self.data_frame['gps_start_cluster'] == Start]
+            Starting_points = self.data_frame.loc[self.data_frame['Start_cluster'] == Start]
 
             for End in self.End_clusters:
-                Ending_points = Starting_points.loc[Starting_points['gps_end_cluster'] == End]
+                Ending_points = Starting_points.loc[Starting_points['End_cluster'] == End]
                 Total = len(Ending_points)
 
                 self.sum_mat.append([Start, End, Total])
@@ -89,7 +75,7 @@ class MK_chain:
             size = 1
 
         proba_vector = np.zeros(size+1)
-        starting_points = self.data_frame.loc[self.data_frame['gps_start_cluster'] == Start]
+        starting_points = self.data_frame.loc[self.data_frame['Start_cluster'] == Start]
         sample = len(starting_points)
 
         # Browse through sum_matrix (format [start_cluster, end_cluster, nb_occurence])
@@ -117,7 +103,7 @@ class MK_chain:
         gamma = np.zeros(size+1)
 
         for start in self.Start_clusters:
-            df_s = self.data_frame.loc[self.data_frame['gps_start_cluster'] == start]
+            df_s = self.data_frame.loc[self.data_frame['Start_cluster'] == start]
             gamma[start] = ((len(df_s)/sample)*100)
         if sum(gamma) > 100.5:
             raise ValueError("Gamma matrix coefficients not adding up to 1")
@@ -155,25 +141,25 @@ class MK_chain:
         Arguments:
             new {pandas.dataframe} --Single entry dataframe representing one trip
         """
-        start = new['gps_start_cluster'].values
-        end = new['gps_end_cluster'].values
+        start = new['Start_cluster'].values
+        end = new['End_cluster'].values
 
         frames = [self.data_frame, new]
         self.data_frame = pd.concat(frames)
 
         # If new line contains cluster id not existing previously, computing gamma and T_mat all over again is needed
         if (start > self.Start_clusters[-1] or end > self.End_clusters[-1]):
-            self.Start_clusters = self.data_frame['gps_start_cluster'].unique()
+            self.Start_clusters = self.data_frame['Start_cluster'].unique()
             self.Start_clusters.sort()
-            self.End_clusters = self.data_frame['gps_end_cluster'].unique()
+            self.End_clusters = self.data_frame['End_cluster'].unique()
             self.End_clusters.sort()
 
             self.create_transition_matrix()
 
         else:
-            self.Start_clusters = self.data_frame['gps_start_cluster'].unique()
+            self.Start_clusters = self.data_frame['Start_cluster'].unique()
             self.Start_clusters.sort()
-            self.End_clusters = self.data_frame['gps_end_cluster'].unique()
+            self.End_clusters = self.data_frame['End_cluster'].unique()
             self.End_clusters.sort()
 
             for start_point in start:
@@ -214,85 +200,19 @@ class MK_chain:
 
         return str(pred)
 
+
 # %%
-
-
 if __name__ == "__main__":
+    df_wind = pd.DataFrame(columns=['Pos', 'Start_cluster', 'End_cluster', 'Wd_state', 'Day', 'Time', 'Time_delta'])
+    window_state = [randint(0, 1) for x in range(20)]
 
-    sns.set_theme()
-    palette = plt.get_cmap('Set1')
+    df_travel = create_dataframe()
+    df_travel = df_travel.rename(columns={"gps_start_cluster": "Start_cluster", "gps_end_cluster": "End_cluster"})
+    df_travel = df_travel.sample(frac=1)
+    df_test = df_travel[50:]
+    mk_travel = generic_markov(df=df_travel)
 
-    epoch_acc = []
-    gamma_epoch_acc = []
-
-    figure(figsize=(16, 14), dpi=80)
-    for i in range(10):
-
-        df_travel = create_dataframe()
-        df_travel = df_travel.sample(frac=1)
-
-        df_data = df_travel[:1]
-        df_train = df_travel[1:50]
-        df_test = df_travel[50:]
-
-        mk_travel = MK_chain(df=df_data)
-        model_acc = []
-        gamma_model_acc = []
-
-        trainset_lenghts = list(range(1, 50))
-
-        for r_id in range(len(df_train)):
-            mk_travel.fit(df_train.iloc[[r_id]])
-            model_acc.append(evaluate_mk(df_test, mk_travel))
-            gamma_model_acc.append(evaluate_gamma_mk(df_test, mk_travel))
-
-        gamma_epoch_acc.append(gamma_model_acc)
-        epoch_acc.append(model_acc)
-        print("Epoch {} done.".format(i))
-
-    for k in range(1, 10):
-        plt.subplot(3, 3, k)
-        for epoch in range(1, 10):
-            plt.plot(trainset_lenghts, epoch_acc[epoch], marker='', color='grey', linewidth=0.6, alpha=0.3)
-        plt.plot(trainset_lenghts, epoch_acc[k], marker='', color=palette(k), linewidth=2.4, alpha=0.9)
-
-        y_ticks = np.arange(0, 101, 25)
-        x_ticks = np.arange(0, 51, 10)
-        ax = plt.gca()
-        # Not ticks everywhere
-        if k not in [7, 8, 9]:
-            ax.set_xticklabels([])
-        if k not in [1, 4, 7]:
-            ax.set_yticklabels([])
-
-        ax.set_ylim([0, 100])
-        ax.set_yticks(y_ticks)
-        ax.set_xticks(x_ticks)
-    plt.title("Evolution of accuracy without gamma consideration")
-    plt.show()
-
-    figure(figsize=(16, 14), dpi=80)
-
-    for k in range(1, 10):
-        plt.subplot(3, 3, k)
-        for epoch in range(1, 10):
-            plt.plot(trainset_lenghts, gamma_epoch_acc[epoch], marker='', color='grey', linewidth=0.6, alpha=0.3)
-        plt.plot(trainset_lenghts, gamma_epoch_acc[k], marker='', color=palette(k), linewidth=2.4, alpha=0.9)
-
-        y_ticks = np.arange(0, 101, 25)
-        x_ticks = np.arange(0, 51, 10)
-        ax = plt.gca()
-        # Not ticks everywhere
-        if k not in [7, 8, 9]:
-            ax.set_xticklabels([])
-        if k not in [1, 4, 7]:
-            ax.set_yticklabels([])
-
-        ax.set_ylim([0, 100])
-        ax.set_yticks(y_ticks)
-        ax.set_xticks(x_ticks)
-    plt.title("Evolution of accuracy with gamma")
-    plt.show()
-
-
+    for r_id in range(len(df_travel)):
+        mk_travel.fit(df_travel.iloc[[r_id]])
+    model_acc = evaluate_mk(df_test, mk_travel)
 # %%
