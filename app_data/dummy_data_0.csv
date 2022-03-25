@@ -1,101 +1,101 @@
 Pos,Wd_state,Time,Day
-maison st cyp,0,9.492857142857144,0
-maison st cyp,0,9.398979591836735,0
-maison st cyp,0,17.046938775510203,2
-maison st cyp,1,17.751020408163264,6
-maison saint agne,1,17.751020408163264,1
-RSWL,1,10.03265306122449,4
-golf,0,9.211224489795919,5
-maison st cyp,0,9.46938775510204,2
-RSWL,0,17.70408163265306,1
-maison saint agne,1,17.445918367346938,1
-maison st cyp,1,17.35204081632653,6
-RSWL,0,10.126530612244899,5
-RSWL,0,9.492857142857144,2
-maison cote pavee,1,9.093877551020409,0
-maison st cyp,1,17.281632653061223,1
-RSWL,0,17.516326530612243,6
-maison cote pavee,1,17.774489795918367,2
-maison saint agne,0,17.211224489795917,6
-maison st cyp,0,9.023469387755101,4
-golf,0,9.539795918367346,6
-maison saint agne,1,9.422448979591836,6
-RSWL,0,18.15,1
-maison st cyp,1,17.398979591836735,2
-maison st cyp,0,9.844897959183674,5
-maison st cyp,0,9.305102040816326,2
-golf,0,17.985714285714284,0
-RSWL,0,18.03265306122449,2
-maison cote pavee,0,17.281632653061223,5
-maison cote pavee,1,9.844897959183674,2
-maison st cyp,0,17.32857142857143,4
-maison cote pavee,0,17.82142857142857,1
-maison st cyp,0,17.46938775510204,2
-maison saint agne,1,9.187755102040816,0
-RSWL,0,17.774489795918367,4
-maison saint agne,0,9.0,4
-maison saint agne,0,17.305102040816326,5
-RSWL,0,18.03265306122449,0
-maison st cyp,0,9.868367346938776,4
-maison saint agne,0,9.023469387755101,0
-maison saint agne,0,17.79795918367347,4
-maison cote pavee,0,17.70408163265306,0
-maison saint agne,0,9.610204081632654,4
-RSWL,0,17.0,1
-maison st cyp,1,17.774489795918367,5
-golf,1,17.516326530612243,6
-maison cote pavee,1,9.211224489795919,4
-maison st cyp,1,17.96224489795918,0
-RSWL,0,17.375510204081632,2
-maison cote pavee,0,9.140816326530611,3
-maison cote pavee,1,17.281632653061223,0
-maison saint agne,1,10.056122448979592,2
-maison saint agne,0,9.492857142857144,2
-maison st cyp,1,9.070408163265306,5
-maison saint agne,1,17.751020408163264,2
-maison saint agne,0,17.96224489795918,2
-maison st cyp,0,17.868367346938776,0
-maison saint agne,0,9.211224489795919,1
-maison saint agne,1,9.91530612244898,4
-maison saint agne,1,9.046938775510204,0
-maison cote pavee,1,9.79795918367347,4
-maison saint agne,1,17.657142857142855,2
-RSWL,0,9.985714285714286,1
-maison st cyp,1,17.82142857142857,4
-maison saint agne,1,9.35204081632653,3
-maison cote pavee,0,17.09387755102041,0
-RSWL,0,10.103061224489796,5
-RSWL,1,9.281632653061225,2
-maison cote pavee,0,17.164285714285715,4
-maison cote pavee,1,17.46938775510204,1
-maison cote pavee,0,9.938775510204081,1
-maison saint agne,1,18.103061224489796,6
-maison cote pavee,1,17.657142857142855,0
-maison cote pavee,0,18.079591836734693,3
-maison saint agne,0,9.281632653061225,4
-RSWL,0,9.58673469387755,1
-maison saint agne,0,17.0,6
-maison cote pavee,1,17.0,5
-maison cote pavee,1,17.891836734693875,6
-RSWL,1,9.375510204081634,6
-maison st cyp,0,9.32857142857143,4
-maison st cyp,0,9.821428571428571,6
-RSWL,0,17.11734693877551,6
-RSWL,1,9.305102040816326,3
-maison cote pavee,0,9.821428571428571,6
-maison cote pavee,0,9.211224489795919,6
-maison cote pavee,0,9.962244897959184,5
-golf,1,18.079591836734693,1
-golf,1,17.164285714285715,1
-maison saint agne,0,9.164285714285715,4
-RSWL,0,9.79795918367347,1
-maison cote pavee,0,17.305102040816326,5
-maison cote pavee,1,17.445918367346938,5
-RSWL,1,9.821428571428571,5
-maison st cyp,0,17.0,5
-maison saint agne,1,17.891836734693875,4
-maison st cyp,0,18.05612244897959,2
-golf,1,9.704081632653061,1
-maison saint agne,0,17.35204081632653,5
-RSWL,1,17.422448979591834,2
-maison cote pavee,1,9.704081632653061,4
+maison saint agne,0,09:03,1
+RSWL,1,09:14,0
+golf,1,17:03,4
+RSWL,1,17:01,2
+maison cote pavee,1,09:39,1
+maison st cyp,1,18:09,6
+maison saint agne,1,17:06,1
+maison cote pavee,1,17:04,2
+RSWL,1,09:49,5
+maison st cyp,1,17:06,6
+golf,1,17:30,2
+RSWL,1,17:27,2
+maison saint agne,1,17:08,3
+RSWL,0,10:08,2
+maison saint agne,1,09:13,6
+maison saint agne,1,17:24,0
+maison saint agne,0,09:01,4
+RSWL,1,09:31,1
+maison cote pavee,1,17:37,3
+maison st cyp,1,17:44,2
+RSWL,1,17:14,0
+maison cote pavee,0,09:13,4
+RSWL,0,17:41,1
+maison saint agne,1,17:14,4
+maison st cyp,1,17:38,4
+maison cote pavee,0,18:05,6
+maison cote pavee,1,17:27,3
+maison st cyp,0,18:02,0
+maison st cyp,1,09:03,3
+RSWL,1,17:17,0
+RSWL,1,17:32,0
+maison st cyp,1,17:00,2
+RSWL,1,09:10,2
+RSWL,1,09:14,6
+maison saint agne,1,09:15,2
+RSWL,1,09:37,3
+maison saint agne,1,17:17,6
+RSWL,1,09:44,2
+RSWL,1,17:07,4
+maison saint agne,0,09:07,3
+maison cote pavee,1,09:51,6
+maison st cyp,0,09:34,6
+maison saint agne,1,09:45,3
+RSWL,1,18:01,6
+RSWL,1,09:37,6
+maison saint agne,1,09:32,5
+maison saint agne,1,09:35,1
+maison saint agne,1,17:42,6
+RSWL,0,17:08,4
+maison st cyp,1,09:28,4
+RSWL,1,09:21,4
+maison st cyp,1,10:02,0
+maison saint agne,1,17:51,4
+RSWL,0,18:08,4
+RSWL,1,09:28,2
+maison st cyp,1,17:39,3
+maison saint agne,1,17:38,3
+RSWL,1,09:30,5
+maison st cyp,1,17:44,3
+RSWL,1,17:11,2
+maison saint agne,1,09:42,2
+maison st cyp,1,17:52,2
+maison st cyp,1,18:01,6
+maison st cyp,1,09:54,0
+RSWL,1,18:01,2
+maison st cyp,1,09:21,3
+maison st cyp,0,17:38,3
+maison st cyp,1,17:52,3
+maison st cyp,1,17:14,3
+RSWL,1,17:39,0
+maison saint agne,1,09:00,3
+RSWL,1,09:38,1
+maison cote pavee,1,17:00,5
+maison cote pavee,1,09:56,0
+maison saint agne,1,09:30,6
+maison saint agne,1,09:28,5
+maison cote pavee,0,09:18,2
+maison saint agne,0,09:25,6
+maison cote pavee,1,09:44,4
+maison cote pavee,0,17:18,4
+maison cote pavee,0,17:52,3
+RSWL,1,18:02,4
+RSWL,0,09:11,6
+RSWL,1,09:56,5
+maison cote pavee,1,17:39,6
+maison cote pavee,1,17:48,4
+maison saint agne,1,17:52,3
+maison st cyp,1,17:45,4
+maison saint agne,1,09:03,1
+RSWL,1,09:00,3
+maison st cyp,1,09:03,1
+RSWL,1,09:42,1
+RSWL,1,09:58,3
+maison saint agne,1,18:06,0
+RSWL,1,18:05,2
+RSWL,1,10:06,4
+maison st cyp,1,09:20,3
+RSWL,0,17:54,4
+RSWL,1,09:45,4
+RSWL,1,17:00,2

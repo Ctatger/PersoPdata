@@ -3,12 +3,19 @@ import pandas as pd
 import os
 import glob
 from ast import literal_eval
+import math
 
 
 from sklearn.cluster import DBSCAN
 
 from travel_clustering import create_clusters, Cluster_Labels,\
                                 Remove_redundant_travels
+
+
+def format_time(time):
+    (mins, hour) = math.modf(time)
+    formatted = '{:02d}:{:02d}'.format(round(hour), round(mins*60))
+    return formatted
 
 
 def create_dataframe():
@@ -63,15 +70,14 @@ def create_window_dataframe(df):
         if df.at[i, 'Wd_state'] != df.at[i+1, 'Wd_state']:
             if df.at[i+1, 'Wd_state'] == 0:
                 data = {'Pos': df.at[i+1, 'Pos'], 'Wd_change': 'Opened',
-                        'Time': df.at[i+1, 'Time'], 'Time_delta': df.at[i+1, 'Time']-df.at[i, 'Wd_state'],
+                        'Time': df.at[i+1, 'Time'],
                         'Day': df.at[i+1, 'Day']}
                 dummy = pd.DataFrame(data=data, index=[i])
                 df_wind = pd.concat([df_wind, dummy])
 
             elif df.at[i+1, 'Wd_state'] == 1:
                 data = {'Pos': df.at[i+1, 'Pos'], 'Wd_change': 'Closed',
-                        'Time': df.at[i+1, 'Time'], 'Time_delta': df.at[i+1, 'Time']-df.at[i+1, 'Wd_state'],
-                        'Day': df.at[i+1, 'Day']}
+                        'Time': df.at[i+1, 'Time'], 'Day': df.at[i+1, 'Day']}
                 dummy = pd.DataFrame(data=data, index=[i])
                 df_wind = pd.concat([df_wind, dummy])
             else:

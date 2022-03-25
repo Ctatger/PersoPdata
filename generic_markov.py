@@ -4,9 +4,9 @@ import numpy as np
 from random import randint
 import csv
 from data_parsing import parse_csv, create_window_dataframe
+import datetime
 
-
-from data_parsing import create_dataframe
+from data_parsing import create_dataframe, format_time
 
 
 def evaluate_mk(df, mk):
@@ -207,20 +207,27 @@ class generic_markov:
 if __name__ == "__main__":
     RANGE = 100
     # df_wind = pd.DataFrame(columns=['Pos', 'Start_cluster', 'End_cluster', 'Wd_state', 'Day', 'Time', 'Time_delta'])
-    window_state = [randint(0, 1) for x in range(RANGE)]
+    window_state = np.random.choice([0, 1], RANGE, p=[0.2, 0.8])
     days = [randint(0, 6) for x in range(RANGE)]
     possible_adresses = ["golf", "RSWL",
                          "maison st cyp", "maison cote pavee",
                          "maison saint agne"]
-    # golf, RSWL, maison st cyp, maison cote pavee, maison saint agne
-    for k in range(5):
+
+    for k in range(10):
         adresses = np.random.choice(possible_adresses, RANGE, p=[0.05, 0.35, 0.2, 0.2, 0.2])
 
         Starting_hours = np.linspace(9, 10.15)
         Stopping_hours = np.linspace(17, 18.15)
 
         possible_times = np.concatenate([Starting_hours, Stopping_hours])
-        Time = np.random.choice(possible_times, RANGE)
+        random_times = np.random.choice(possible_times, RANGE)
+        Time = []
+
+        for index in range(len(random_times)):
+            Time.append(format_time(random_times[index]))
+
+        # FMT = '%H:%M:%S'
+        # tdelta = datetime.strptime(s2, FMT) - datetime.strptime(s1, FMT)
 
         with open('/home/celadodc-rswl.com/corentin.tatger/PersoPdata/app_data/dummy_data_{}.csv'.format(k),
                   mode='w') as csv_file:

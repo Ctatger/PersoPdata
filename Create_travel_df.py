@@ -1,19 +1,11 @@
-import os
-import sys
 import glob
-from this import d
-from time import sleep
-#Import Data 
-#from log_processor.log_processor import get_reduced_dataset
 import datetime
 
-#Data Management
+# Data Management
 import pandas as pd
-import geopandas as gpd
-from shapely.geometry import Point
 import numpy as np
 
-#Data visualization
+# Data visualization
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import seaborn as sns
