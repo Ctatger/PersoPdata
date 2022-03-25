@@ -56,20 +56,22 @@ def parse_csv(dir_path, index_column=None):
 
 
 def create_window_dataframe(df):
-    df_wind = pd.DataFrame(columns=['Pos', 'Wd_change', 'Time', 'Time_delta'])
+    df_wind = pd.DataFrame(columns=['Pos', 'Wd_change', 'Time', 'Time_delta', 'Day'])
 
     for i in range(len(df)-1):
 
         if df.at[i, 'Wd_state'] != df.at[i+1, 'Wd_state']:
             if df.at[i+1, 'Wd_state'] == 0:
                 data = {'Pos': df.at[i+1, 'Pos'], 'Wd_change': 'Opened',
-                        'Time': df.at[i+1, 'Time'], 'Time_delta': df.at[i+1, 'Time']-df.at[i, 'Wd_state']}
+                        'Time': df.at[i+1, 'Time'], 'Time_delta': df.at[i+1, 'Time']-df.at[i, 'Wd_state'],
+                        'Day': df.at[i+1, 'Day']}
                 dummy = pd.DataFrame(data=data, index=[i])
                 df_wind = pd.concat([df_wind, dummy])
 
             elif df.at[i+1, 'Wd_state'] == 1:
                 data = {'Pos': df.at[i+1, 'Pos'], 'Wd_change': 'Closed',
-                        'Time': df.at[i+1, 'Time'], 'Time_delta': df.at[i+1, 'Time']-df.at[i+1, 'Wd_state']}
+                        'Time': df.at[i+1, 'Time'], 'Time_delta': df.at[i+1, 'Time']-df.at[i+1, 'Wd_state'],
+                        'Day': df.at[i+1, 'Day']}
                 dummy = pd.DataFrame(data=data, index=[i])
                 df_wind = pd.concat([df_wind, dummy])
             else:

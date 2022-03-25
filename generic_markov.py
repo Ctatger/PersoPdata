@@ -224,12 +224,12 @@ if __name__ == "__main__":
 
         with open('/home/celadodc-rswl.com/corentin.tatger/PersoPdata/app_data/dummy_data_{}.csv'.format(k),
                   mode='w') as csv_file:
-            fieldnames = ['Pos', 'Wd_state', 'Time']
+            fieldnames = ['Pos', 'Wd_state', 'Time', 'Day']
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
 
             writer.writeheader()
             for i in range(RANGE):
-                writer.writerow({'Pos': adresses[i], 'Wd_state': window_state[i], 'Time': Time[i]})
+                writer.writerow({'Pos': adresses[i], 'Wd_state': window_state[i], 'Time': Time[i], 'Day': days[i]})
 
     df_csv = parse_csv("/home/celadodc-rswl.com/corentin.tatger/PersoPdata/app_data/")
     df_window = create_window_dataframe(df_csv)
