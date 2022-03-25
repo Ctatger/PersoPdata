@@ -2,6 +2,8 @@
 import pandas as pd
 import numpy as np
 from random import randint
+import csv
+from data_parsing import parse_csv, create_window_dataframe
 
 
 from data_parsing import create_dataframe
@@ -203,8 +205,35 @@ class generic_markov:
 
 # %%
 if __name__ == "__main__":
-    df_wind = pd.DataFrame(columns=['Pos', 'Start_cluster', 'End_cluster', 'Wd_state', 'Day', 'Time', 'Time_delta'])
-    window_state = [randint(0, 1) for x in range(20)]
+    RANGE = 100
+    # df_wind = pd.DataFrame(columns=['Pos', 'Start_cluster', 'End_cluster', 'Wd_state', 'Day', 'Time', 'Time_delta'])
+    window_state = [randint(0, 1) for x in range(RANGE)]
+    days = [randint(0, 6) for x in range(RANGE)]
+    possible_adresses = ["golf", "RSWL",
+                         "maison st cyp", "maison cote pavee",
+                         "maison saint agne"]
+    # golf, RSWL, maison st cyp, maison cote pavee, maison saint agne
+    for k in range(5):
+        adresses = np.random.choice(possible_adresses, RANGE, p=[0.05, 0.35, 0.2, 0.2, 0.2])
+
+        Starting_hours = np.linspace(9, 10.15)
+        Stopping_hours = np.linspace(17, 18.15)
+
+        possible_times = np.concatenate([Starting_hours, Stopping_hours])
+        Time = np.random.choice(possible_times, RANGE)
+
+        with open('/home/celadodc-rswl.com/corentin.tatger/PersoPdata/app_data/dummy_data_{}.csv'.format(k),
+                  mode='w') as csv_file:
+            fieldnames = ['Pos', 'Wd_state', 'Time']
+            writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+
+            writer.writeheader()
+            for i in range(RANGE):
+                writer.writerow({'Pos': adresses[i], 'Wd_state': window_state[i], 'Time': Time[i]})
+
+    df_csv = parse_csv("/home/celadodc-rswl.com/corentin.tatger/PersoPdata/app_data/")
+    df_window = create_window_dataframe(df_csv)
+    print(df_window)
 
     df_travel = create_dataframe()
     df_travel = df_travel.rename(columns={"gps_start_cluster": "Start_cluster", "gps_end_cluster": "End_cluster"})
@@ -215,4 +244,5 @@ if __name__ == "__main__":
     for r_id in range(len(df_travel)):
         mk_travel.fit(df_travel.iloc[[r_id]])
     model_acc = evaluate_mk(df_test, mk_travel)
+    print("Model accuracy is : ", model_acc, "%")
 # %%
