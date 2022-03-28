@@ -1,5 +1,6 @@
 **/venv
 **/__pycache__
 **/csv
+**/app_data
 ui.py
 my_map.html

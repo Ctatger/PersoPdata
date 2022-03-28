@@ -4,9 +4,9 @@ import numpy as np
 from random import randint
 import csv
 from data_parsing import parse_csv, create_window_dataframe
-import datetime
-
-from data_parsing import create_dataframe, format_time
+from datetime import datetime
+from IPython.display import display
+from data_parsing import format_time
 
 
 def evaluate_mk(df, mk):
@@ -189,7 +189,8 @@ class generic_markov:
         if curr_st in self.states:
             st_id = self.states.index(curr_st)
             most_likely = max(self.transitionMatrix[st_id])
-            pred_id = np.where(self.transitionMatrix[st_id] == most_likely)[0][0]
+            pred_id = np.where(
+                self.transitionMatrix[st_id] == most_likely)[0][0]
             return self.states[pred_id]
         else:
             # If given cluster Id not existing in states, outputs -1
@@ -207,42 +208,56 @@ class generic_markov:
 if __name__ == "__main__":
     RANGE = 100
     # df_wind = pd.DataFrame(columns=['Pos', 'Start_cluster', 'End_cluster', 'Wd_state', 'Day', 'Time', 'Time_delta'])
-    window_state = np.random.choice([0, 1], RANGE, p=[0.2, 0.8])
+    window_state = []
     days = [randint(0, 6) for x in range(RANGE)]
-    possible_adresses = ["golf", "RSWL",
+    possible_adresses = [[43.575319, 1.364180], [43.579300, 1.378159], [43.597517, 1.433078],
+                         [43.594339, 1.465000], [43.583054, 1.450124]]
+    """ possible_adresses = ["golf", "RSWL",
                          "maison st cyp", "maison cote pavee",
-                         "maison saint agne"]
+                         "maison saint agne"] """
 
     for k in range(10):
-        adresses = np.random.choice(possible_adresses, RANGE, p=[0.05, 0.35, 0.2, 0.2, 0.2])
-
+        rand = np.random.choice(list(range(5)), RANGE, p=[
+                                0.05, 0.35, 0.2, 0.2, 0.2])
+        adresses = [possible_adresses[i] for i in rand]
         Starting_hours = np.linspace(9, 10.15)
         Stopping_hours = np.linspace(17, 18.15)
 
         possible_times = np.concatenate([Starting_hours, Stopping_hours])
         random_times = np.random.choice(possible_times, RANGE)
         Time = []
+        tdelta = []
 
-        for index in range(len(random_times)):
+        FMT = '%H:%M'
+        for index in range(RANGE):
             Time.append(format_time(random_times[index]))
+            if (adresses[index] == [43.575319, 1.364180] or adresses[index] == [43.579300, 1.378159]):
+                window_state.append(np.random.choice([0, 1], 1, p=[0.8, 0.2]))
+            else:
+                window_state.append(np.random.choice(
+                    [0, 1], 1, p=[0.05, 0.95]))
 
-        # FMT = '%H:%M:%S'
-        # tdelta = datetime.strptime(s2, FMT) - datetime.strptime(s1, FMT)
+        for t_index in range(RANGE-1):
+            delta = datetime.strptime(
+                Time[t_index+1], FMT) - datetime.strptime(Time[t_index], FMT)
+            tdelta.append(str(delta))
 
         with open('/home/celadodc-rswl.com/corentin.tatger/PersoPdata/app_data/dummy_data_{}.csv'.format(k),
                   mode='w') as csv_file:
-            fieldnames = ['Pos', 'Wd_state', 'Time', 'Day']
+            fieldnames = ['Pos_lat', 'Pos_lon', 'Wd_state', 'Time', 'Day']
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
 
             writer.writeheader()
             for i in range(RANGE):
-                writer.writerow({'Pos': adresses[i], 'Wd_state': window_state[i], 'Time': Time[i], 'Day': days[i]})
+                writer.writerow({'Pos_lat': adresses[i][0], 'Pos_lon': adresses[i][1], 'Wd_state': window_state[i][0],
+                                 'Time': Time[i], 'Day': days[i]})
 
-    df_csv = parse_csv("/home/celadodc-rswl.com/corentin.tatger/PersoPdata/app_data/")
+    df_csv = parse_csv(
+        "/home/celadodc-rswl.com/corentin.tatger/PersoPdata/app_data/")
     df_window = create_window_dataframe(df_csv)
-    print(df_window)
+    display(df_window)
 
-    df_travel = create_dataframe()
+    """ df_travel = create_dataframe()
     df_travel = df_travel.rename(columns={"gps_start_cluster": "Start_cluster", "gps_end_cluster": "End_cluster"})
     df_travel = df_travel.sample(frac=1)
     df_test = df_travel[50:]
@@ -251,5 +266,5 @@ if __name__ == "__main__":
     for r_id in range(len(df_travel)):
         mk_travel.fit(df_travel.iloc[[r_id]])
     model_acc = evaluate_mk(df_test, mk_travel)
-    print("Model accuracy is : ", model_acc, "%")
+    print("Model accuracy is : ", model_acc, "%") """
 # %%
