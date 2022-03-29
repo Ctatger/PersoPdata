@@ -1,10 +1,12 @@
 # %%
 import pandas as pd
 import numpy as np
-from random import randint
+import random
 import csv
+
+from random import randint
+from ipyleaflet import Map, basemaps, basemap_to_tiles, CircleMarker
 from data_parsing import parse_csv, create_window_dataframe
-from datetime import datetime
 from IPython.display import display
 from data_parsing import format_time
 
@@ -189,8 +191,7 @@ class generic_markov:
         if curr_st in self.states:
             st_id = self.states.index(curr_st)
             most_likely = max(self.transitionMatrix[st_id])
-            pred_id = np.where(
-                self.transitionMatrix[st_id] == most_likely)[0][0]
+            pred_id = np.where(self.transitionMatrix[st_id] == most_likely)[0][0]
             return self.states[pred_id]
         else:
             # If given cluster Id not existing in states, outputs -1
@@ -210,37 +211,35 @@ if __name__ == "__main__":
     # df_wind = pd.DataFrame(columns=['Pos', 'Start_cluster', 'End_cluster', 'Wd_state', 'Day', 'Time', 'Time_delta'])
     window_state = []
     days = [randint(0, 6) for x in range(RANGE)]
-    possible_adresses = [[43.575319, 1.364180], [43.579300, 1.378159], [43.597517, 1.433078],
-                         [43.594339, 1.465000], [43.583054, 1.450124]]
-    """ possible_adresses = ["golf", "RSWL",
-                         "maison st cyp", "maison cote pavee",
-                         "maison saint agne"] """
+    # possible_adresses = ["golf", "RSWL","maison st cyp", "maison cote pavee","maison saint agne"]
+    possible_adresses = [[43.575319, 1.364180], [43.579300, 1.378159], [43.597517, 1.433078], [43.594339, 1.465000],
+                         [43.583054, 1.450124]]
+    adresses_polygon = [[43.575414, 1.364311, 43.575223, 1.364048],
+                        [43.579395, 1.378290, 43.579204, 1.378027],
+                        [43.597612, 1.433209, 43.597421, 1.432946],
+                        [43.594434, 1.465131, 43.594243, 1.464868],
+                        [43.583149, 1.450255, 43.582958, 1.449992]]
 
     for k in range(10):
-        rand = np.random.choice(list(range(5)), RANGE, p=[
-                                0.05, 0.35, 0.2, 0.2, 0.2])
-        adresses = [possible_adresses[i] for i in rand]
+        rand = np.random.choice(list(range(5)), RANGE, p=[0.05, 0.5, 0.1, 0.1, 0.25])
+        adresses = [[random.uniform(adresses_polygon[i][2], adresses_polygon[i][0]),
+                     random.uniform(adresses_polygon[i][3], adresses_polygon[i][1])]
+                    for i in rand]
+
         Starting_hours = np.linspace(9, 10.15)
         Stopping_hours = np.linspace(17, 18.15)
 
         possible_times = np.concatenate([Starting_hours, Stopping_hours])
         random_times = np.random.choice(possible_times, RANGE)
         Time = []
-        tdelta = []
 
         FMT = '%H:%M'
         for index in range(RANGE):
             Time.append(format_time(random_times[index]))
-            if (adresses[index] == [43.575319, 1.364180] or adresses[index] == [43.579300, 1.378159]):
+            if (rand[index] == 0 or rand[index] == 1):
                 window_state.append(np.random.choice([0, 1], 1, p=[0.8, 0.2]))
             else:
-                window_state.append(np.random.choice(
-                    [0, 1], 1, p=[0.05, 0.95]))
-
-        for t_index in range(RANGE-1):
-            delta = datetime.strptime(
-                Time[t_index+1], FMT) - datetime.strptime(Time[t_index], FMT)
-            tdelta.append(str(delta))
+                window_state.append(np.random.choice([0, 1], 1, p=[0.01, 0.99]))
 
         with open('/home/celadodc-rswl.com/corentin.tatger/PersoPdata/app_data/dummy_data_{}.csv'.format(k),
                   mode='w') as csv_file:
@@ -255,16 +254,18 @@ if __name__ == "__main__":
     df_csv = parse_csv(
         "/home/celadodc-rswl.com/corentin.tatger/PersoPdata/app_data/")
     df_window = create_window_dataframe(df_csv)
-    display(df_window)
+    # display(df_window)
 
-    """ df_travel = create_dataframe()
-    df_travel = df_travel.rename(columns={"gps_start_cluster": "Start_cluster", "gps_end_cluster": "End_cluster"})
-    df_travel = df_travel.sample(frac=1)
-    df_test = df_travel[50:]
-    mk_travel = generic_markov(df=df_travel)
+    """ rec_colors = ["#%06x" % random.randint(
+        0, 0xFFFFFF) for i in range(len(df_window['Window_cluster'].unique()))] """
+    rec_colors = ['blue', 'red', 'orange', 'yellow', 'brown', 'green']
+    map_layer = basemap_to_tiles(basemaps.CartoDB.Positron)
+    m = Map(layers=(map_layer, ), center=((48.852, 2.246)), zoom=5, scroll_wheel_zoom=True)
 
-    for r_id in range(len(df_travel)):
-        mk_travel.fit(df_travel.iloc[[r_id]])
-    model_acc = evaluate_mk(df_test, mk_travel)
-    print("Model accuracy is : ", model_acc, "%") """
+    for index, row in df_window.iterrows():
+        if row['Coord_cluster'] >= 0:
+            m.add_layer(CircleMarker(location=row['Coordinates'], radius=3,
+                                     color=rec_colors[row['Coord_cluster'] % len(rec_colors)],
+                                     fill_color='#FFFFFF', weight=2))
+    display(m)
 # %%

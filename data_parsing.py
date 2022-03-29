@@ -5,7 +5,7 @@ import os
 import glob
 from ast import literal_eval
 import math
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sklearn.cluster import DBSCAN
 
@@ -13,8 +13,8 @@ from travel_clustering import Cluster_Labels,\
     Remove_redundant_travels
 
 
-def format_time(time):
-    (mins, hour) = math.modf(time)
+def format_time(time_):
+    (mins, hour) = math.modf(time_)
     formatted = '{:02d}:{:02d}'.format(round(hour), round(mins*60))
     return formatted
 
@@ -73,32 +73,43 @@ def create_clusters(df, columns, clustering_method, header_name=None):
 
 
 def create_window_dataframe(df):
+
+    MAX_DELTA = timedelta(minutes=3)
+
     df_wind = pd.DataFrame(columns=['Coordinates', 'Wd_change', 'Time',
                            'Time_delta', 'Day', 'Window_cluster'])
     Coord = []
     for k in range(len(df)):
         Coord.append([df.at[k, 'Pos_lat'], df.at[k, 'Pos_lon']])
     df['Coordinates'] = Coord
-    dbscan = DBSCAN(eps=0.005, min_samples=3)
-    create_clusters(df, 'Coordinates', dbscan)
+    method = DBSCAN(eps=0.005, min_samples=int(len(df)/5))
+    # method = OPTICS(min_samples=int(len(df)/8))
+    create_clusters(df, 'Coordinates', method)
     window_cluster = []
     for i in range(len(df)-1):
 
         if df.at[i, 'Wd_state'] != df.at[i+1, 'Wd_state']:
             FMT = '%H:%M'
-            delta = datetime.strptime(
-                df.at[i+1, 'Time'], FMT) - datetime.strptime(df.at[i, 'Time'], FMT)
 
             if df.at[i+1, 'Wd_state'] == 0:
+                delta = pd.NaT
                 data = {'Coordinates': [df.at[i+1, 'Coordinates']], 'Wd_change': 'Opened',
                         'Time': df.at[i+1, 'Time'],
-                        'Day': df.at[i+1, 'Day'], 'Time_delta': str(delta),
+                        'Day': df.at[i+1, 'Day'], 'Time_delta': delta,
                         'Coord_cluster': df.at[i+1, 'Coordinates_cluster']*2}
 
                 dummy = pd.DataFrame(data=data, index=[i])
                 df_wind = pd.concat([df_wind, dummy])
 
-            elif df.at[i+1, 'Wd_state'] == 1:
+            elif (df.at[i+1, 'Wd_state'] == 1 and i > 0):
+
+                if (datetime.strptime(df.at[i, 'Time'], FMT) > datetime.strptime(df.at[i-1, 'Time'], FMT)):
+                    delta = datetime.strptime(df.at[i, 'Time'], FMT) - datetime.strptime(df.at[i-1, 'Time'], FMT)
+                    if delta > MAX_DELTA:
+                        delta = MAX_DELTA
+                else:
+                    delta = pd.NaT
+
                 data = {'Coordinates': [df.at[i+1, 'Coordinates']], 'Wd_change': 'Closed',
                         'Time': df.at[i+1, 'Time'], 'Day': df.at[i+1, 'Day'], 'Time_delta': str(delta),
                         'Coord_cluster': df.at[i+1, 'Coordinates_cluster']*2}
@@ -116,6 +127,15 @@ def create_window_dataframe(df):
         else:
             window_cluster.append(df_wind.at[i, 'Coord_cluster'] + 1)
     df_wind['Window_cluster'] = window_cluster
+    df_wind = df_wind.astype({'Window_cluster': 'int32', 'Coord_cluster': 'int32'})
+
+    nb_c = len(df_wind.loc[df_wind['Coord_cluster'] >= 0].Coord_cluster.unique())
+
+    noise = len(df_wind.loc[df_wind['Coord_cluster'] < 0])
+
+    print("The model found {} position clusters, it will use {} window state clusters".format(nb_c, nb_c*2))
+    print("{} total points were categorized as noise".format(noise))
+    print("Representing {:.2f}% of total data".format(100*noise/len(df_wind)))
 
     return df_wind
 # %%
