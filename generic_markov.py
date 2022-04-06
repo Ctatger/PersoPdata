@@ -4,6 +4,11 @@ import numpy as np
 import random
 import csv
 
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.graph_objects as go
+
+from matplotlib.pyplot import figure
 from random import randint
 from ipyleaflet import Map, basemaps, basemap_to_tiles, CircleMarker
 from data_parsing import parse_csv, create_window_dataframe
@@ -207,6 +212,11 @@ class generic_markov:
 
 # %%
 if __name__ == "__main__":
+
+    sns.set_theme()
+    palette = plt.get_cmap('Set1')
+    figure(figsize=(16, 14), dpi=80)
+
     RANGE = 100
     # df_wind = pd.DataFrame(columns=['Pos', 'Start_cluster', 'End_cluster', 'Wd_state', 'Day', 'Time', 'Time_delta'])
     window_state = []
@@ -255,9 +265,6 @@ if __name__ == "__main__":
         "/home/celadodc-rswl.com/corentin.tatger/PersoPdata/app_data/")
     df_window = create_window_dataframe(df_csv)
     # display(df_window)
-
-    """ rec_colors = ["#%06x" % random.randint(
-        0, 0xFFFFFF) for i in range(len(df_window['Window_cluster'].unique()))] """
     rec_colors = ['blue', 'red', 'orange', 'yellow', 'brown', 'green']
     map_layer = basemap_to_tiles(basemaps.CartoDB.Positron)
     m = Map(layers=(map_layer, ), center=((48.852, 2.246)), zoom=5, scroll_wheel_zoom=True)
@@ -268,4 +275,69 @@ if __name__ == "__main__":
                                      color=rec_colors[row['Coord_cluster'] % len(rec_colors)],
                                      fill_color='#FFFFFF', weight=2))
     display(m)
+    m.save('my_map.html', title='My Map')
+
+    epoch_acc = []
+    for i in range(10):
+        df_window = df_window.sample(frac=1)
+        df_train = df_window.sample(frac=0.7)
+        df_test = df_window.drop(df_train.index)
+
+        Mk_chain = generic_markov(df_train.head())
+        current_acc = [evaluate_mk(df_test, Mk_chain)]
+
+        for row_id in range(5, len(df_train)):
+            Mk_chain.fit(df_train.iloc[[row_id]])
+            current_acc.append(evaluate_mk(df_test, Mk_chain))
+
+        epoch_acc.append(current_acc)
+        print("Epoch {} done.".format(i))
+
+    # plt.plot(list(range(30)), epoch_acc)
+    # plt.plot(list(range(30)), [np.mean(epoch_acc) for i in range(30)])
+    # plt.title("Mean accuracy of model is {}%".format(np.mean(epoch_acc)))
+    # ax = plt.gca()
+    # ax.set_ylim([60, 100])
+    # plt.show()
+
+    # Create figure
+    gofig = go.Figure()
+    # Add traces, one for each slider step
+    for step in range(10):
+        gofig.add_trace(
+            go.Scatter(
+                visible=False,
+                line=dict(color="#00CED1", width=6),
+                name="v = " + str(step),
+                x=np.arange(0, len(df_train), 1),
+                y=epoch_acc[step]))
+        gofig.update_yaxes(range=[0, 100])
+
+    # Make 10th trace visible
+    gofig.data[0].visible = True
+
+    # Create and add slider
+    steps = []
+    for i in range(len(gofig.data)):
+        step = dict(
+            method="update",
+            args=[{"visible": [False] * len(gofig.data)},
+                  {"title": "Evolution of Markov Accuracy's"}],  # layout attribute
+        )
+        step["args"][0]["visible"][i] = True  # Toggle i'th trace to "visible"
+        steps.append(step)
+
+    sliders = [dict(
+        active=10,
+        currentvalue={"prefix": "Frequency: "},
+        pad={"t": 50},
+        steps=steps
+    )]
+
+    gofig.update_layout(
+        sliders=sliders
+    )
+
+    gofig.show()
+
 # %%

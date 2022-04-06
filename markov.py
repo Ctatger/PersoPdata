@@ -4,6 +4,8 @@ import seaborn as sns
 import numpy as np
 import pandas as pd
 
+import plotly.graph_objects as go
+
 from data_parsing import create_dataframe
 from matplotlib.pyplot import figure
 
@@ -294,5 +296,6 @@ if __name__ == "__main__":
     plt.title("Evolution of accuracy with gamma")
     plt.show()
 
+   
 
 # %%
