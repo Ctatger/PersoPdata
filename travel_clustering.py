@@ -138,11 +138,11 @@ def Cluster_Rectangles(data_frame,group='gps_start_cluster'):
             cluster_rectangles.append((tuple(bottom_left),tuple(top_right)))
     return cluster_rectangles
 
-def Cluster_Labels(data_frame,group='gps_start_cluster'):
+def Cluster_Labels(data_frame,group='Start_cluster'):
     for Cluster_id in np.unique(data_frame[group]):
         if Cluster_id !=-1:
             points = data_frame.loc[data_frame[group] == Cluster_id]
-            if group == 'gps_start_cluster':
+            if group == 'Start_cluster':
                 data_frame.loc[data_frame[group] == Cluster_id, 'gps_start_cluster_label'] = points['start_gps_label'].mode()[0]
             else:
                 data_frame.loc[data_frame[group] == Cluster_id, 'gps_end_cluster_label'] = points['end_gps_label'].mode()[0]
