@@ -276,7 +276,7 @@ if __name__ == "__main__":
                                      fill_color='#FFFFFF', weight=2))
     display(m)
     m.save('my_map.html', title='My Map')
-
+    # %%
     epoch_acc = []
     for i in range(10):
         df_window = df_window.sample(frac=1)
