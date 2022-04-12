@@ -23,7 +23,20 @@ class TestMethods (ut.TestCase):
     def test_isWindowClustersEven(self):
         df_app = parse_app_data('/home/celadodc-rswl.com/corentin.tatger/Documents/data_1649679870505.jsonl')
         df_w = create_window_dataframe(df_app, verbose=False)
-        self.assertEqual((len(df_w['Coord_cluster'].unique()) % 2), 0)
+        nb_clusters = len(df_w['Coord_cluster'].unique())
+        self.assertTrue(nb_clusters % 2 == 0 or nb_clusters == 1)
+
+    def test_dataframeSizeUpdate(self):
+        df_app = parse_app_data('/home/celadodc-rswl.com/corentin.tatger/Documents/data_1649679870505.jsonl')
+        df_w = create_window_dataframe(df_app, verbose=False)
+        mk = generic_markov(df=df_w)
+        starting_length = len(mk.data_frame)
+
+        df_app2 = parse_app_data('/home/celadodc-rswl.com/corentin.tatger/Documents/jsonl/data_1649213014018.jsonl')
+        df_w2 = create_window_dataframe(df_app2, verbose=False)
+        for r_id in range(len(df_w2)):
+            mk.fit(df_w2.iloc[[r_id]])
+        self.assertGreater(len(mk.data_frame), starting_length)
 
 
 if __name__ == "__main__":
