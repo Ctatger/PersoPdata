@@ -2,6 +2,7 @@
 **/__pycache__
 **/csv
 **/app_data
+**/json_data
 ui.py
 my_map.html
 Pdata_dev.code-workspace

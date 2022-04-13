@@ -1,19 +1,13 @@
 # %%
 import pandas as pd
 import numpy as np
-import random
-import csv
+
 
 import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.graph_objects as go
 
 from matplotlib.pyplot import figure
-from random import randint
-from ipyleaflet import Map, basemaps, basemap_to_tiles, CircleMarker
-from data_parsing import parse_csv, create_window_dataframe
-from IPython.display import display
-from data_parsing import format_time
 
 
 def evaluate_mk(df, mk):
@@ -174,7 +168,7 @@ class generic_markov:
             end = new['End_cluster'].values
 
             frames = [self.data_frame, new]
-            self.data_frame = pd.concat(frames)
+            self.data_frame = pd.concat(frames, ignore_index=True)
 
             # If new contains cluster id not existing previously, computing gamma and T_mat all over again is needed
             if (start > self.Start_clusters[-1] or end > self.End_clusters[-1]):
@@ -203,6 +197,7 @@ class generic_markov:
                     vect = self.create_proba_vector(i)
                     self.transitionMatrix[i] = vect
                     self.gamma = self.create_gamma()
+            self.data_frame.reset_index(drop=True, inplace=True)
 
     def predict(self, curr_st):
         """Gives id of predicted end cluster, given start of trip
@@ -237,62 +232,6 @@ if __name__ == "__main__":
     sns.set_theme()
     palette = plt.get_cmap('Set1')
     figure(figsize=(16, 14), dpi=80)
-
-    RANGE = 100
-    window_state = []
-    days = [randint(0, 6) for x in range(RANGE)]
-    adresses_polygon = [[43.575414, 1.364311, 43.575223, 1.364048],
-                        [43.579395, 1.378290, 43.579204, 1.378027],
-                        [43.597612, 1.433209, 43.597421, 1.432946],
-                        [43.594434, 1.465131, 43.594243, 1.464868],
-                        [43.583149, 1.450255, 43.582958, 1.449992]]
-
-    for k in range(10):
-        rand = np.random.choice(list(range(5)), RANGE, p=[0.05, 0.5, 0.1, 0.1, 0.25])
-        adresses = [[random.uniform(adresses_polygon[i][2], adresses_polygon[i][0]),
-                     random.uniform(adresses_polygon[i][3], adresses_polygon[i][1])]
-                    for i in rand]
-
-        Starting_hours = np.linspace(9, 10.15)
-        Stopping_hours = np.linspace(17, 18.15)
-
-        possible_times = np.concatenate([Starting_hours, Stopping_hours])
-        random_times = np.random.choice(possible_times, RANGE)
-        Time = []
-
-        FMT = '%H:%M:%S'
-        for index in range(RANGE):
-            Time.append(format_time(random_times[index]))
-            if (rand[index] == 0 or rand[index] == 1):
-                window_state.append(np.random.choice([0, 1], 1, p=[0.8, 0.2]))
-            else:
-                window_state.append(np.random.choice([0, 1], 1, p=[0.01, 0.99]))
-
-        with open('/home/celadodc-rswl.com/corentin.tatger/PersoPdata/app_data/dummy_data_{}.csv'.format(k),
-                  mode='w') as csv_file:
-            fieldnames = ['Coordinates', 'Wd_state', 'Time', 'Day']
-            writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-
-            writer.writeheader()
-            for i in range(RANGE):
-                writer.writerow({'Coordinates': adresses[i], 'Wd_state': window_state[i][0],
-                                 'Time': Time[i], 'Day': days[i]})
-
-    df_csv = parse_csv(
-        "/home/celadodc-rswl.com/corentin.tatger/PersoPdata/app_data/")
-    df_window = create_window_dataframe(df_csv)
-    # display(df_window)
-    rec_colors = ['blue', 'red', 'orange', 'yellow', 'brown', 'green']
-    map_layer = basemap_to_tiles(basemaps.CartoDB.Positron)
-    m = Map(layers=(map_layer, ), center=((48.852, 2.246)), zoom=5, scroll_wheel_zoom=True)
-
-    for index, row in df_window.iterrows():
-        if row['Coord_cluster'] >= 0:
-            m.add_layer(CircleMarker(location=row['Coordinates'], radius=3,
-                                     color=rec_colors[row['Coord_cluster'] % len(rec_colors)],
-                                     fill_color='#FFFFFF', weight=2))
-    display(m)
-    m.save('my_map.html', title='My Map')
     # %%
     epoch_acc = []
     for i in range(10):

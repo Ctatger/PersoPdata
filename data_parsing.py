@@ -218,7 +218,7 @@ def create_cluster_map(df, display_noise=False):
                                      fill_color='#FFFFFF', weight=2))
         elif (row['Coord_cluster'] < 0 and display_noise):
             m.add_layer(CircleMarker(location=row['Coordinates'], radius=3,
-                                     color=rec_colors['black'],
+                                     color='black',
                                      fill_color='#FFFFFF', weight=2))
     return m
 # %%
