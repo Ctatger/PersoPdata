@@ -36,7 +36,7 @@ class TestMethods (ut.TestCase):
         df_w2 = create_window_dataframe(df_app2, verbose=False)
         for r_id in range(len(df_w2)):
             mk.fit(df_w2.iloc[[r_id]])
-        self.assertGreater(len(mk.data_frame), starting_length)
+        self.assertEqual(len(mk.data_frame), starting_length+len(df_w2))
 
 
 if __name__ == "__main__":
