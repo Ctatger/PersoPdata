@@ -218,12 +218,8 @@ if __name__ == "__main__":
     figure(figsize=(16, 14), dpi=80)
 
     RANGE = 100
-    # df_wind = pd.DataFrame(columns=['Pos', 'Start_cluster', 'End_cluster', 'Wd_state', 'Day', 'Time', 'Time_delta'])
     window_state = []
     days = [randint(0, 6) for x in range(RANGE)]
-    # possible_adresses = ["golf", "RSWL","maison st cyp", "maison cote pavee","maison saint agne"]
-    possible_adresses = [[43.575319, 1.364180], [43.579300, 1.378159], [43.597517, 1.433078], [43.594339, 1.465000],
-                         [43.583054, 1.450124]]
     adresses_polygon = [[43.575414, 1.364311, 43.575223, 1.364048],
                         [43.579395, 1.378290, 43.579204, 1.378027],
                         [43.597612, 1.433209, 43.597421, 1.432946],
