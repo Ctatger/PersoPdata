@@ -18,7 +18,8 @@ from travel_clustering import Cluster_Labels,\
 
 def format_time(time_):
     (mins, hour) = math.modf(time_)
-    formatted = '{:02d}:{:02d}'.format(round(hour), round(mins*60))
+
+    formatted = '{:02d}:{:02d}:00'.format(round(hour), round(mins*60))
     return formatted
 
 
@@ -85,6 +86,8 @@ def create_window_dataframe(df, verbose=True):
                            'Time_delta', 'Day', 'Window_cluster'])
     method = DBSCAN(eps=0.005, min_samples=int(len(df)/5))
     # method = OPTICS(min_samples=int(len(df)/8))
+    if type(df['Coordinates'][0]) == str:
+        df['Coordinates'] = df['Coordinates'].apply(literal_eval)
     create_clusters(df, 'Coordinates', method)
     window_cluster = []
     for i in range(len(df)-1):

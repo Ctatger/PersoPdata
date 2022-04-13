@@ -31,28 +31,31 @@ def evaluate_mk(df, mk):
 
 
 class generic_markov:
-    def __init__(self, df):
+    def __init__(self, df=None):
         """MK_chain class constructor, computes transition matrix and gamma from given dataframe
 
         Arguments:
             df {pandas.dataframe} -- dataframe, containing clusters ID for start and arrival
         """
+        if df is None:
+            self.data_frame = pd.DataFrame()
         # Stored df as class data for ease of use
-        self.data_frame = df
+        else:
+            self.data_frame = df
 
-        # List used to store occurences of trip scenario. Used for proba computation
-        self.sum_mat = []
-        # Used to check if proba in matrix add up to 1, margin for float approx
-        self.TOLERANCE_VALUE = 0.0001
+            # List used to store occurences of trip scenario. Used for proba computation
+            self.sum_mat = []
+            # Used to check if proba in matrix add up to 1, margin for float approx
+            self.TOLERANCE_VALUE = 0.0001
 
-        # Trip clusters informations
-        self.Start_clusters = self.data_frame['Start_cluster'].unique()
-        self.Start_clusters.sort()
-        self.End_clusters = self.data_frame['End_cluster'].unique()
-        self.End_clusters.sort()
+            # Trip clusters informations
+            self.Start_clusters = self.data_frame['Start_cluster'].unique()
+            self.Start_clusters.sort()
+            self.End_clusters = self.data_frame['End_cluster'].unique()
+            self.End_clusters.sort()
 
-        # Computes and stores Transition matrix and gamma vector
-        self.create_transition_matrix()
+            # Computes and stores Transition matrix and gamma vector
+            self.create_transition_matrix()
 
     def create_sum_matrix(self):
         """Parses dataset to store occurences of each start-end cluster combination
@@ -150,39 +153,56 @@ class generic_markov:
         Arguments:
             new {pandas.dataframe} --Single entry dataframe representing one trip
         """
-        start = new['Start_cluster'].values
-        end = new['End_cluster'].values
+        if self.data_frame.empty:
+            self.data_frame = new
+            # List used to store occurences of trip scenario. Used for proba computation
+            self.sum_mat = []
+            # Used to check if proba in matrix add up to 1, margin for float approx
+            self.TOLERANCE_VALUE = 0.0001
 
-        frames = [self.data_frame, new]
-        self.data_frame = pd.concat(frames)
-
-        # If new line contains cluster id not existing previously, computing gamma and T_mat all over again is needed
-        if (start > self.Start_clusters[-1] or end > self.End_clusters[-1]):
+            # Trip clusters informations
             self.Start_clusters = self.data_frame['Start_cluster'].unique()
             self.Start_clusters.sort()
             self.End_clusters = self.data_frame['End_cluster'].unique()
             self.End_clusters.sort()
 
+            # Computes and stores Transition matrix and gamma vector
             self.create_transition_matrix()
 
         else:
-            self.Start_clusters = self.data_frame['Start_cluster'].unique()
-            self.Start_clusters.sort()
-            self.End_clusters = self.data_frame['End_cluster'].unique()
-            self.End_clusters.sort()
+            start = new['Start_cluster'].values
+            end = new['End_cluster'].values
 
-            for start_point in start:
-                for end_point in end:
-                    for freq in self.sum_mat:
+            frames = [self.data_frame, new]
+            self.data_frame = pd.concat(frames)
 
-                        if (freq[0] == start_point and freq[1] == end_point):
-                            new_id = self.sum_mat.index(freq)
-                            self.sum_mat[new_id][2] += 1
+            # If new contains cluster id not existing previously, computing gamma and T_mat all over again is needed
+            if (start > self.Start_clusters[-1] or end > self.End_clusters[-1]):
+                self.Start_clusters = self.data_frame['Start_cluster'].unique()
+                self.Start_clusters.sort()
+                self.End_clusters = self.data_frame['End_cluster'].unique()
+                self.End_clusters.sort()
 
-            for i in start:
-                vect = self.create_proba_vector(i)
-                self.transitionMatrix[i] = vect
-                self.gamma = self.create_gamma()
+                self.create_transition_matrix()
+
+            else:
+                self.Start_clusters = self.data_frame['Start_cluster'].unique()
+                self.Start_clusters.sort()
+                self.End_clusters = self.data_frame['End_cluster'].unique()
+                self.End_clusters.sort()
+
+                for start_point in start:
+                    for end_point in end:
+                        for freq in self.sum_mat:
+
+                            if (freq[0] == start_point and freq[1] == end_point):
+                                new_id = self.sum_mat.index(freq)
+                                self.sum_mat[new_id][2] += 1
+
+                for i in start:
+                    vect = self.create_proba_vector(i)
+                    self.transitionMatrix[i] = vect
+                    self.gamma = self.create_gamma()
 
     def predict(self, curr_st):
         """Gives id of predicted end cluster, given start of trip
@@ -212,7 +232,8 @@ class generic_markov:
 
 # %%
 if __name__ == "__main__":
-
+    mk = generic_markov()
+    # %%
     sns.set_theme()
     palette = plt.get_cmap('Set1')
     figure(figsize=(16, 14), dpi=80)
@@ -239,7 +260,7 @@ if __name__ == "__main__":
         random_times = np.random.choice(possible_times, RANGE)
         Time = []
 
-        FMT = '%H:%M'
+        FMT = '%H:%M:%S'
         for index in range(RANGE):
             Time.append(format_time(random_times[index]))
             if (rand[index] == 0 or rand[index] == 1):
@@ -249,12 +270,12 @@ if __name__ == "__main__":
 
         with open('/home/celadodc-rswl.com/corentin.tatger/PersoPdata/app_data/dummy_data_{}.csv'.format(k),
                   mode='w') as csv_file:
-            fieldnames = ['Pos_lat', 'Pos_lon', 'Wd_state', 'Time', 'Day']
+            fieldnames = ['Coordinates', 'Wd_state', 'Time', 'Day']
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
 
             writer.writeheader()
             for i in range(RANGE):
-                writer.writerow({'Pos_lat': adresses[i][0], 'Pos_lon': adresses[i][1], 'Wd_state': window_state[i][0],
+                writer.writerow({'Coordinates': adresses[i], 'Wd_state': window_state[i][0],
                                  'Time': Time[i], 'Day': days[i]})
 
     df_csv = parse_csv(
