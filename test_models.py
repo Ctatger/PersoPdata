@@ -34,8 +34,9 @@ class TestMethods (ut.TestCase):
 
         df_app2 = parse_app_data('/home/celadodc-rswl.com/corentin.tatger/Documents/jsonl/data_1649213014018.jsonl')
         df_w2 = create_window_dataframe(df_app2, verbose=False)
-        for r_id in range(len(df_w2)):
-            mk.fit(df_w2.iloc[[r_id]])
+        mk.fit(df_w2)
+        # for r_id in range(len(df_w2)):
+        #    mk.fit(df_w2.iloc[[r_id]])
         self.assertEqual(len(mk.data_frame), starting_length+len(df_w2))
 
 

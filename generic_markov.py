@@ -3,13 +3,6 @@ import pandas as pd
 import numpy as np
 
 
-import matplotlib.pyplot as plt
-import seaborn as sns
-import plotly.graph_objects as go
-
-from matplotlib.pyplot import figure
-
-
 def evaluate_mk(df, mk):
     acc_total = 0
     for r_id in range(len(df)):
@@ -171,7 +164,7 @@ class generic_markov:
             self.data_frame = pd.concat(frames, ignore_index=True)
 
             # If new contains cluster id not existing previously, computing gamma and T_mat all over again is needed
-            if (start > self.Start_clusters[-1] or end > self.End_clusters[-1]):
+            if (max(start) > self.Start_clusters[-1] or max(end) > self.End_clusters[-1]):
                 self.Start_clusters = self.data_frame['Start_cluster'].unique()
                 self.Start_clusters.sort()
                 self.End_clusters = self.data_frame['End_cluster'].unique()
